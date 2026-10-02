@@ -28,8 +28,12 @@ Cursor と Codex の消化率をメニューバーに
 | 項目 | 値 |
 |------|-----|
 | **キー色（app-keycolor）** | `#ff3399` |
-| **KV（app-kvbg）** | メディア ID **2533**（マゼンタ `#660066` → `#ff3399` のグラデ） |
-| **app-kvbgaddcss** | `background-repeat: no-repeat;` / `center` / `cover` / `background-color: rgba(255, 51, 153, 0.28);` / `background-blend-mode: screen;` |
+| **KV（app-kvbg）** | メディア ID **2536**。正本 **`mac/kv-background.jpg`**（ユーザー指定のテック／バーチャート系 KV。**Vecteezy 水印入り**の素材をそのまま使用） |
+| **app-kvbgaddcss** | 暗い KV にマゼンタを載せるため **`screen`** ＋ `background-color: rgba(255, 51, 153, 0.32);`。必須4行＋補助色: |
+| | `background-repeat: no-repeat;` |
+| | `background-position: center;` |
+| | `background-size: cover;` |
+| | `background-blend-mode: screen;` |
 | **アイコン意匠** | 正本 **`mac/icon.svg`** — 丸角四角、グラデ `#ff3399` → `#660066`、三本のバー（使用量メーター）。cursor-usage の緑は不使用。 |
 | **app-icon** | メディア ID **2532**（SVG から 512px PNG をパイプアップロード） |
 
