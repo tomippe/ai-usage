@@ -29,7 +29,7 @@
 | Codex 使用量 | `CodexUsageClient.swift`（ChatGPT.app 同梱 `codex app-server`、`account/rateLimits/read`） |
 | 入っている判定 | `ProviderAvailability.swift` |
 | 前面アプリ切替 | `AIUsage.swift`（Cursor / Codex / CursorWrap、直近 UserDefaults） |
-| メニューバー | `icon-menubar.svg` → テンプレート PNG（枠＋くり抜きバー、`isTemplate=true`）。色は status item の effectiveAppearance に任せる。数値併記 |
+| メニューバー | `MenuBarIconRenderer` で 18pt ベクター even-odd くり抜き（`icon-menubar.svg` は意匠正本のみ）。`isTemplate=true`。数値併記 |
 | Cursor 下層 | `CursorDashboardMenuView`（4カード・期間・簡易日別棒・モデル表）。Codex 同等は後回し |
 | メニュー一覧 | プロバイダ行・週間/5h（Codex）・リセット・プラン |
 | ポーリング | 5 分、クールダウン中は再取得スキップ（前面切替は表示のみ） |
