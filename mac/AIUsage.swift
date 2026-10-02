@@ -145,7 +145,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func makeMenuBarTemplateImage() -> NSImage? {
         guard let base = NSImage(named: NSImage.Name("MenuBarIcon")) else { return nil }
         guard let img = base.copy() as? NSImage else { return nil }
-        img.size = base.size
+        // 論理サイズ 18×18 pt（@2x 36 px ラスター）。隣のシステムアイコンと同程度
+        img.size = NSSize(width: 18, height: 18)
         img.isTemplate = true
         return img
     }

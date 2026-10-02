@@ -143,8 +143,9 @@ create_app_bundle() {
     fi
     if [ -f "icon-menubar.svg" ]; then
         # テンプレート用: 黒＋アルファのみ（マゼンタ等の色は載せない）
-        magick -background none "icon-menubar.svg" -resize 22x22 -colorspace sRGB -type TrueColorAlpha "$RESOURCES/MenuBarIcon.png"
-        magick -background none "icon-menubar.svg" -resize 44x44 -colorspace sRGB -type TrueColorAlpha "$RESOURCES/MenuBarIcon@2x.png"
+        # メニューバー標準: 18×18 pt（@2x は 36 px）。塗り＋くり抜きを Gray+alpha で維持
+        magick -background none "icon-menubar.svg" -resize 18x18 -colorspace sRGB -type TrueColorAlpha "$RESOURCES/MenuBarIcon.png"
+        magick -background none "icon-menubar.svg" -resize 36x36 -colorspace sRGB -type TrueColorAlpha "$RESOURCES/MenuBarIcon@2x.png"
     elif [ -f "icon.svg" ]; then
         magick -background none "icon.svg" -resize 22x22 "$RESOURCES/MenuBarIcon.png"
         magick -background none "icon.svg" -resize 44x44 "$RESOURCES/MenuBarIcon@2x.png"
