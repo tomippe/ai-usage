@@ -12,9 +12,52 @@ enum ProviderKind: String, CaseIterable, Codable {
     }
 }
 
+enum OnDemandDisplayState: String {
+    case disabled
+    case limited
+    case unlimited
+}
+
+struct CursorUsageEvent {
+    var timestamp: TimeInterval
+    var model: String
+    var kind: String
+    var totalTokens: Int
+    var requests: Double
+    var spendCents: Int
+}
+
+struct CursorDailySpendRow {
+    var day: TimeInterval
+    var category: String
+    var spendCents: Int
+    var totalTokens: Int
+}
+
+enum UsageDuration: String, CaseIterable {
+    case hours24 = "1d"
+    case days7 = "7d"
+    case days30 = "30d"
+    case billingCycle = "billingCycle"
+
+    var menuLabelKey: String {
+        switch self {
+        case .hours24: return "dash.duration.24h"
+        case .days7: return "dash.duration.7d"
+        case .days30: return "dash.duration.30d"
+        case .billingCycle: return "dash.duration.cycle"
+        }
+    }
+}
+
 struct CursorUsageSnapshot {
     var planName: String?
     var totalPercentUsed: Double?
+    var autoPercentUsed: Double?
+    var apiPercentUsed: Double?
+    var onDemand: OnDemandDisplayState
+    var onDemandSpendDollars: Double
+    var onDemandLimitDollars: Double?
     var usedRequests: Int
     var limitRequests: Int
     var resetsAt: Date?
@@ -54,6 +97,24 @@ struct CodexUsageSnapshot {
         guard let pct = weeklyUsedPercent else { return "—" }
         return formatPercent(pct)
     }
+}
+
+struct CursorDashboardBundle {
+    var snapshot: CursorUsageSnapshot
+    var events: [CursorUsageEvent]
+    var dailySpend: [CursorDailySpendRow]
+}
+
+func formatTokens(_ n: Int) -> String {
+    let v = Double(n)
+    if v >= 1_000_000_000 { return String(format: "%.1fB", v / 1_000_000_000) }
+    if v >= 1_000_000 { return String(format: "%.1fM", v / 1_000_000) }
+    if v >= 1_000 { return String(format: "%.1fK", v / 1_000) }
+    return "\(n)"
+}
+
+func formatDollarsFromCents(_ cents: Int) -> String {
+    String(format: "$%.2f", Double(cents) / 100)
 }
 
 func formatPercent(_ value: Double) -> String {

@@ -6,6 +6,11 @@ private let aiUsageIntroURL = URL(string: "https://apps.tomippe.jp/ai-usage/")!
 private let appDisplayName = "AI Usage"
 private let pollInterval: TimeInterval = 300
 private let lastProviderDefaultsKey = "jp.tomippe.ai-usage.lastProvider"
+private extension Notification.Name {
+    static let applicationDidChangeEffectiveAppearance = Notification.Name(
+        "NSApplicationDidChangeEffectiveAppearanceNotification"
+    )
+}
 
 class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem!
@@ -17,6 +22,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     )
 
     private var cursorSnapshot: CursorUsageSnapshot?
+    private var cursorDashboardBundle: CursorDashboardBundle?
+    private let cursorDashboardView = CursorDashboardMenuView()
     private var codexSnapshot: CodexUsageSnapshot?
     private var lastFetchTime: Date?
     private var isFetching = false
@@ -39,6 +46,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleEffectiveAppearanceChanged),
+            name: .applicationDidChangeEffectiveAppearance,
+            object: nil
+        )
         applyMenuBarIcon()
         statusItem.button?.title = " …"
 
@@ -89,27 +102,68 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         pollTimer = Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { [weak self] _ in
             self?.refreshUsage(force: false)
         }
+
+        DispatchQueue.main.async { [weak self] in
+            self?.applyMenuBarIcon()
+        }
     }
 
-    func menuWillOpen(_: NSMenu) {
+    @objc private func handleEffectiveAppearanceChanged() {
+        applyMenuBarIcon()
+    }
+
+    func menuWillOpen(_ menu: NSMenu) {
         syncLaunchAtLoginItem()
         for (provider, item) in providerMenuItems {
-            item.title = providerMenuLine(provider: provider)
+            if provider == .cursor, item.submenu != nil {
+                item.title = providerMenuLine(provider: provider)
+                if let bundle = cursorDashboardBundle {
+                    cursorDashboardView.update(bundle: bundle)
+                }
+            } else {
+                item.title = providerMenuLine(provider: provider)
+            }
+        }
+        if menu == menuContainer, cursorDashboardBundle != nil {
+            cursorDashboardView.update(bundle: cursorDashboardBundle!)
         }
     }
 
+    /// メニューバー色はシステム Dark Mode ではなく status item の effectiveAppearance に従う。描画はテンプレートに任せる。
     private func applyMenuBarIcon() {
-        if let img = NSImage(named: "MenuBarIcon") {
-            img.isTemplate = false
-            statusItem.button?.image = img
-            statusItem.button?.imagePosition = .imageLeading
+        guard let button = statusItem?.button else { return }
+        guard let img = makeMenuBarTemplateImage() else {
+            NSLog("AI Usage: MenuBarIcon not found in bundle")
             return
         }
-        if let img = NSImage(named: "AppIcon") {
-            img.isTemplate = false
-            statusItem.button?.image = img
-            statusItem.button?.imagePosition = .imageLeading
-        }
+        button.image = img
+        button.imagePosition = .imageLeading
+        button.contentTintColor = nil
+        logMenuBarAppearance(context: "applyMenuBarIcon")
+    }
+
+    private func makeMenuBarTemplateImage() -> NSImage? {
+        guard let base = NSImage(named: NSImage.Name("MenuBarIcon")) else { return nil }
+        guard let img = base.copy() as? NSImage else { return nil }
+        img.size = base.size
+        img.isTemplate = true
+        return img
+    }
+
+    private func logMenuBarAppearance(context: String) {
+        let button = statusItem?.button
+        let statusAppearance = button?.effectiveAppearance.name.rawValue ?? "nil"
+        let appAppearance = NSApp.effectiveAppearance.name.rawValue
+        let best = button?.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua])?.rawValue ?? "nil"
+        let template = button?.image?.isTemplate == true ? "yes" : "no"
+        NSLog(
+            "AI Usage menubar icon [%@]: statusButton.effectiveAppearance=%@ bestMatch=%@ NSApp.effectiveAppearance=%@ image.isTemplate=%@",
+            context,
+            statusAppearance,
+            best,
+            appAppearance,
+            template
+        )
     }
 
     @objc private func frontAppChanged(_ notification: Notification) {
@@ -165,6 +219,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func rebuildProviderMenuItems() {
         for item in providerMenuItems.values {
+            if item.submenu != nil {
+                item.submenu?.removeAllItems()
+            }
             menuContainer.removeItem(item)
         }
         providerMenuItems.removeAll()
@@ -182,7 +239,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         for provider in installed {
             let title = providerMenuLine(provider: provider)
             let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
-            item.isEnabled = false
+            if provider == .cursor {
+                let sub = NSMenu()
+                let dashItem = NSMenuItem()
+                dashItem.view = cursorDashboardView
+                sub.addItem(dashItem)
+                sub.addItem(.separator())
+                let summary = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+                summary.isEnabled = false
+                sub.addItem(summary)
+                item.submenu = sub
+            } else {
+                item.isEnabled = false
+            }
             menuContainer.insertItem(item, at: index)
             providerMenuItems[provider] = item
             index += 1
@@ -247,9 +316,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         DispatchQueue.global(qos: .utility).async { [weak self] in
             guard let self else { return }
             var cursorResult: CursorUsageSnapshot?
+            var cursorDash: CursorDashboardBundle?
             var codexResult: CodexUsageSnapshot?
             if ProviderAvailability.isCursorInstalled() {
-                cursorResult = CursorUsageClient.fetchUsage()
+                cursorDash = CursorUsageClient.fetchDashboardBundle()
+                cursorResult = cursorDash?.snapshot
             }
             if ProviderAvailability.isCodexInstalled() {
                 codexResult = CodexUsageClient.fetchUsage()
@@ -258,6 +329,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 self.isFetching = false
                 self.lastFetchTime = Date()
                 self.cursorSnapshot = cursorResult
+                self.cursorDashboardBundle = cursorDash
+                if let cursorDash {
+                    self.cursorDashboardView.update(bundle: cursorDash)
+                }
                 self.codexSnapshot = codexResult
                 self.rebuildProviderMenuItems()
                 self.updateStatusBarTitle()

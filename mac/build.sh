@@ -93,7 +93,7 @@ MOVE_SWIFT="$SCRIPT_DIR/../../build-common/MoveToApplicationsFolder.swift"
 TOMIPPE_ABOUT="$SCRIPT_DIR/../../build-common/TomippeAppAbout.swift"
 TOMIPPE_RELAUNCH="$SCRIPT_DIR/../../build-common/TomippeRelaunch.swift"
 TOMIPPE_FEEDBACK="$SCRIPT_DIR/../../build-common/TomippeFeedbackForm.swift"
-SWIFT_SOURCES="UsageTypes.swift CursorUsageClient.swift CodexUsageClient.swift ProviderAvailability.swift AIUsage.swift $MOVE_SWIFT $TOMIPPE_ABOUT $TOMIPPE_RELAUNCH $TOMIPPE_FEEDBACK"
+SWIFT_SOURCES="UsageTypes.swift CursorUsageClient.swift CursorModelBreakdown.swift CursorDashboardMenuView.swift CodexUsageClient.swift ProviderAvailability.swift AIUsage.swift $MOVE_SWIFT $TOMIPPE_ABOUT $TOMIPPE_RELAUNCH $TOMIPPE_FEEDBACK"
 for src in $SWIFT_SOURCES; do
     if [ ! -f "$src" ]; then
         echo "❌ $src がありません。"
@@ -141,7 +141,11 @@ create_app_bundle() {
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>"
     fi
-    if [ -f "icon.svg" ]; then
+    if [ -f "icon-menubar.svg" ]; then
+        # テンプレート用: 黒＋アルファのみ（マゼンタ等の色は載せない）
+        magick -background none "icon-menubar.svg" -resize 22x22 -colorspace sRGB -type TrueColorAlpha "$RESOURCES/MenuBarIcon.png"
+        magick -background none "icon-menubar.svg" -resize 44x44 -colorspace sRGB -type TrueColorAlpha "$RESOURCES/MenuBarIcon@2x.png"
+    elif [ -f "icon.svg" ]; then
         magick -background none "icon.svg" -resize 22x22 "$RESOURCES/MenuBarIcon.png"
         magick -background none "icon.svg" -resize 44x44 "$RESOURCES/MenuBarIcon@2x.png"
     fi

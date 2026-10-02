@@ -22,6 +22,16 @@ enum CursorUsageClient {
         let planName: String?
     }
 
+    static func fetchDashboardBundle() -> CursorDashboardBundle {
+        let snapshot = fetchUsage()
+        guard snapshot.errorMessage != "not_installed", snapshot.errorMessage != "not_logged_in" else {
+            return CursorDashboardBundle(snapshot: snapshot, events: [], dailySpend: [])
+        }
+        let events = fetchUsageEvents()
+        let daily = fetchDailySpendRows()
+        return CursorDashboardBundle(snapshot: snapshot, events: events, dailySpend: daily)
+    }
+
     static func fetchUsage() -> CursorUsageSnapshot {
         let now = Date()
         guard ProviderAvailability.isCursorInstalled() else {
@@ -42,7 +52,9 @@ enum CursorUsageClient {
 
     private static func emptySnapshot(at now: Date, error: String) -> CursorUsageSnapshot {
         CursorUsageSnapshot(
-            planName: nil, totalPercentUsed: nil, usedRequests: 0, limitRequests: 0,
+            planName: nil, totalPercentUsed: nil, autoPercentUsed: nil, apiPercentUsed: nil,
+            onDemand: .disabled, onDemandSpendDollars: 0, onDemandLimitDollars: nil,
+            usedRequests: 0, limitRequests: 0,
             resetsAt: nil, fetchedAt: now, errorMessage: error
         )
     }
@@ -149,6 +161,11 @@ enum CursorUsageClient {
         var snapshot = CursorUsageSnapshot(
             planName: setup.planName,
             totalPercentUsed: nil,
+            autoPercentUsed: nil,
+            apiPercentUsed: nil,
+            onDemand: setup.onDemandEnabled ? .limited : .disabled,
+            onDemandSpendDollars: 0,
+            onDemandLimitDollars: setup.onDemandEnabled ? 0 : nil,
             usedRequests: totals.used,
             limitRequests: totals.limit,
             resetsAt: resetsAt,
@@ -156,10 +173,7 @@ enum CursorUsageClient {
             errorMessage: nil
         )
         if let period = fetchCurrentPeriodUsage(accessToken: auth.accessToken) {
-            if let pct = period.totalPercentUsed { snapshot.totalPercentUsed = pct }
-            if let end = period.billingCycleEndMs {
-                snapshot.resetsAt = Date(timeIntervalSince1970: end / 1000)
-            }
+            applyPeriod(&snapshot, period: period, onDemandEnabled: setup.onDemandEnabled)
         }
         return snapshot
     }
@@ -200,6 +214,11 @@ enum CursorUsageClient {
         var snapshot = CursorUsageSnapshot(
             planName: setup.planName,
             totalPercentUsed: nil,
+            autoPercentUsed: nil,
+            apiPercentUsed: nil,
+            onDemand: setup.onDemandEnabled ? .limited : .disabled,
+            onDemandSpendDollars: 0,
+            onDemandLimitDollars: nil,
             usedRequests: used,
             limitRequests: limit,
             resetsAt: resetsAt,
@@ -207,14 +226,32 @@ enum CursorUsageClient {
             errorMessage: nil
         )
         if let period = fetchCurrentPeriodUsage(accessToken: auth.accessToken) {
-            if let pct = period.totalPercentUsed { snapshot.totalPercentUsed = pct }
+            applyPeriod(&snapshot, period: period, onDemandEnabled: setup.onDemandEnabled)
         }
         return snapshot
     }
 
     private struct PeriodUsage {
         var totalPercentUsed: Double?
+        var autoPercentUsed: Double?
+        var apiPercentUsed: Double?
         var billingCycleEndMs: Double?
+        var onDemandSpendDollars: Double?
+        var onDemandLimitDollars: Double?
+    }
+
+    private static func applyPeriod(_ snapshot: inout CursorUsageSnapshot, period: PeriodUsage, onDemandEnabled: Bool) {
+        if let pct = period.totalPercentUsed { snapshot.totalPercentUsed = pct }
+        snapshot.autoPercentUsed = period.autoPercentUsed
+        snapshot.apiPercentUsed = period.apiPercentUsed
+        if let end = period.billingCycleEndMs {
+            snapshot.resetsAt = Date(timeIntervalSince1970: end / 1000)
+        }
+        if onDemandEnabled, let limit = period.onDemandLimitDollars, limit > 0 {
+            snapshot.onDemand = .limited
+            snapshot.onDemandLimitDollars = limit
+            snapshot.onDemandSpendDollars = period.onDemandSpendDollars ?? snapshot.onDemandSpendDollars
+        }
     }
 
     private static func fetchCurrentPeriodUsage(accessToken: String) -> PeriodUsage? {
@@ -229,9 +266,118 @@ enum CursorUsageClient {
         ) else { return nil }
 
         let planUsage = data["planUsage"] as? [String: Any]
-        let total = clampPercent(doubleValue(planUsage?["totalPercentUsed"]))
-        let endMs = doubleValue(data["billingCycleEnd"])
-        return PeriodUsage(totalPercentUsed: total, billingCycleEndMs: endMs)
+        let spendLimit = data["spendLimitUsage"] as? [String: Any]
+        var limitDollars: Double?
+        var spendDollars: Double?
+        if let spendLimit {
+            let limitCents = doubleValue(spendLimit["individualLimit"]) ?? doubleValue(spendLimit["pooledLimit"])
+            let usedCents = doubleValue(spendLimit["individualUsed"]) ?? doubleValue(spendLimit["pooledUsed"])
+            if let limitCents, limitCents > 0 { limitDollars = limitCents / 100 }
+            if let usedCents { spendDollars = usedCents / 100 }
+        }
+        return PeriodUsage(
+            totalPercentUsed: clampPercent(doubleValue(planUsage?["totalPercentUsed"])),
+            autoPercentUsed: clampPercent(doubleValue(planUsage?["autoPercentUsed"])),
+            apiPercentUsed: clampPercent(doubleValue(planUsage?["apiPercentUsed"])),
+            billingCycleEndMs: doubleValue(data["billingCycleEnd"]),
+            onDemandSpendDollars: spendDollars,
+            onDemandLimitDollars: limitDollars
+        )
+    }
+
+    static func fetchUsageEvents() -> [CursorUsageEvent] {
+        guard let auth = loadAuth(), let setup = ensureSetup(auth: auth) else { return [] }
+        let headers = cursorHeaders(sessionToken: auth.sessionToken)
+        let teamId = setup.teamId ?? 0
+        let endDate = Date().timeIntervalSince1970 * 1000
+        let startDate = endDate - 31 * 86_400_000
+        var page = 1
+        var all: [CursorUsageEvent] = []
+        while page <= 10 {
+            guard let data = httpPOST(
+                url: "https://cursor.com/api/dashboard/get-filtered-usage-events",
+                headers: headers,
+                body: [
+                    "teamId": teamId,
+                    "startDate": String(format: "%.0f", startDate),
+                    "endDate": String(format: "%.0f", endDate),
+                    "page": page,
+                    "pageSize": 500,
+                ]
+            ) else { break }
+            let events = data["usageEventsDisplay"] as? [[String: Any]] ?? []
+            for e in events {
+                let tok = e["tokenUsage"] as? [String: Any] ?? [:]
+                let tokens = (intValue(tok["inputTokens"]) ?? 0)
+                    + (intValue(tok["outputTokens"]) ?? 0)
+                    + (intValue(tok["cacheWriteTokens"]) ?? 0)
+                    + (intValue(tok["cacheReadTokens"]) ?? 0)
+                let kindRaw = e["kind"] as? String ?? ""
+                let kind: String
+                if kindRaw == "USAGE_EVENT_KIND_USAGE_BASED" { kind = "On-Demand" }
+                else if kindRaw.contains("ERRORED") { kind = "Errored" }
+                else if kindRaw.contains("ABORTED") { kind = "Aborted" }
+                else { kind = "Included" }
+                all.append(CursorUsageEvent(
+                    timestamp: doubleValue(e["timestamp"]) ?? 0,
+                    model: e["model"] as? String ?? "unknown",
+                    kind: kind,
+                    totalTokens: tokens,
+                    requests: doubleValue(e["requestsCosts"]) ?? doubleValue(e["numRequests"]) ?? 1,
+                    spendCents: intValue(e["chargedCents"]) ?? 0
+                ))
+            }
+            if events.count < 500 { break }
+            page += 1
+        }
+        return all
+    }
+
+    static func fetchDailySpendRows() -> [CursorDailySpendRow] {
+        guard let auth = loadAuth(), let setup = ensureSetup(auth: auth),
+              setup.isTeamMember, let teamId = setup.teamId else { return [] }
+        let headers = cursorHeaders(sessionToken: auth.sessionToken)
+        let endMs = Date().timeIntervalSince1970 * 1000
+        let startMs = endMs - 31 * 86_400_000
+        guard let dashboardUserId = resolveDashboardUserId(auth: auth, headers: headers, setup: setup),
+              let data = httpPOST(
+                url: "https://cursor.com/api/dashboard/get-daily-spend-by-category",
+                headers: headers,
+                body: [
+                    "teamId": teamId,
+                    "userId": dashboardUserId,
+                    "periodStartMs": Int(startMs),
+                    "periodEndMs": Int(endMs),
+                    "groupBy": 1,
+                    "spendType": 1,
+                ]
+              )
+        else { return [] }
+        let rows = data["dailySpend"] as? [[String: Any]] ?? []
+        return rows.compactMap { row in
+            guard let day = doubleValue(row["day"]),
+                  let category = row["category"] as? String,
+                  let spend = intValue(row["spendCents"]),
+                  let tokens = intValue(row["totalTokens"]) else { return nil }
+            return CursorDailySpendRow(day: day, category: category, spendCents: spend, totalTokens: tokens)
+        }
+    }
+
+    private static func resolveDashboardUserId(auth: AuthInfo, headers: [String: String], setup: SetupCache) -> Int? {
+        if let n = Int(auth.userId) { return n }
+        guard setup.isTeamMember, let teamId = setup.teamId,
+              let data = httpPOST(
+                url: "https://cursor.com/api/dashboard/get-team-spend",
+                headers: headers,
+                body: ["teamId": teamId]
+              )
+        else { return nil }
+        let members = data["teamMemberSpend"] as? [[String: Any]] ?? []
+        for member in members {
+            if (member["email"] as? String) == auth.email,
+               let uid = intValue(member["userId"]) { return uid }
+        }
+        return nil
     }
 
     private static func extractUsageTotals(_ usage: [String: Any]) -> (used: Int, limit: Int) {
