@@ -8,7 +8,12 @@
 "move.error_title" = "移動できませんでした";
 "move.error_message" = "Applications にコピーできませんでした。手動で移動してください。";
 "move.ok" = "OK";
-"menu.placeholder" = "使用量 — 実装予定";
+"status.no_providers" = "対応アプリが見つかりません";
+"status.not_logged_in" = "未ログイン";
+"status.unavailable" = "取得できません";
+"menu.codex_weekly" = "週間";
+"menu.codex_primary" = "5時間";
+"menu.resets_at" = "リセット %@";
 "menu.refresh" = "今すぐ更新";
 "menu.login_item" = "ログイン時に開く";
 "menu.about_format" = "%@ について...";

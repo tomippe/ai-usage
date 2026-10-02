@@ -4,42 +4,49 @@ import Sparkle
 
 private let aiUsageIntroURL = URL(string: "https://apps.tomippe.jp/ai-usage/")!
 private let appDisplayName = "AI Usage"
+private let pollInterval: TimeInterval = 300
+private let lastProviderDefaultsKey = "jp.tomippe.ai-usage.lastProvider"
 
-/// メニューバー本体の骨格（disk-monitor / ip-monitor 型）。使用量取得は docs/handoff-from-cursor-usage.md に従い後続実装。
 class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem!
     private var launchAtLoginMenuItem: NSMenuItem?
-    private var placeholderMenuItem: NSMenuItem?
+    private var providerMenuItems: [ProviderKind: NSMenuItem] = [:]
+    private var menuContainer: NSMenu!
     private let updaterController = SPUStandardUpdaterController(
         startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil
     )
+
+    private var cursorSnapshot: CursorUsageSnapshot?
+    private var codexSnapshot: CodexUsageSnapshot?
+    private var lastFetchTime: Date?
+    private var isFetching = false
+    private var pollTimer: Timer?
+    private var lastActiveProvider: ProviderKind = .cursor
+    private var foregroundProvider: ProviderKind?
 
     func applicationWillFinishLaunching(_: Notification) {
         MoveToApplicationsFolder.moveIfNecessary()
     }
 
     func applicationDidFinishLaunching(_: Notification) {
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        if let img = NSImage(systemSymbolName: "gauge.with.dots.needle.67percent", accessibilityDescription: appDisplayName) {
-            img.isTemplate = true
-            statusItem.button?.image = img
-            statusItem.button?.imagePosition = .imageLeading
+        if let saved = UserDefaults.standard.string(forKey: lastProviderDefaultsKey),
+           let provider = ProviderKind(rawValue: saved) {
+            lastActiveProvider = provider
+        } else if ProviderAvailability.isCursorInstalled() {
+            lastActiveProvider = .cursor
+        } else if ProviderAvailability.isCodexInstalled() {
+            lastActiveProvider = .codex
         }
-        statusItem.button?.title = " —"
 
-        let menu = NSMenu()
-        menu.delegate = self
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        applyMenuBarIcon()
+        statusItem.button?.title = " …"
 
-        let placeholder = NSMenuItem(
-            title: NSLocalizedString("menu.placeholder", comment: ""),
-            action: nil,
-            keyEquivalent: ""
-        )
-        placeholder.isEnabled = false
-        placeholderMenuItem = placeholder
-        menu.addItem(placeholder)
-        menu.addItem(.separator())
-        menu.addItem(menuItem(NSLocalizedString("menu.refresh", comment: ""), #selector(refreshNow), "r"))
+        menuContainer = NSMenu()
+        menuContainer.delegate = self
+        rebuildProviderMenuItems()
+        menuContainer.addItem(.separator())
+        menuContainer.addItem(menuItem(NSLocalizedString("menu.refresh", comment: ""), #selector(refreshNow), "r"))
 
         if #available(macOS 13.0, *) {
             let loginItem = NSMenuItem(
@@ -48,37 +55,214 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 keyEquivalent: ""
             )
             loginItem.target = self
-            menu.addItem(loginItem)
+            menuContainer.addItem(loginItem)
             launchAtLoginMenuItem = loginItem
             syncLaunchAtLoginItem()
-            menu.addItem(.separator())
+            menuContainer.addItem(.separator())
         }
 
-        menu.addItem(aboutMenuItem())
-        menu.addItem(feedbackMenuItem())
-        menu.addItem(sparkleCheckForUpdatesMenuItem())
-        menu.addItem(.separator())
-        menu.addItem(TomippeRelaunch.restartMenuItem(
+        menuContainer.addItem(aboutMenuItem())
+        menuContainer.addItem(feedbackMenuItem())
+        menuContainer.addItem(sparkleCheckForUpdatesMenuItem())
+        menuContainer.addItem(.separator())
+        menuContainer.addItem(TomippeRelaunch.restartMenuItem(
             appDisplayName: appDisplayName,
             target: self,
             action: #selector(restartApp)
         ))
-        menu.addItem(TomippeRelaunch.quitMenuItem(
+        menuContainer.addItem(TomippeRelaunch.quitMenuItem(
             appDisplayName: appDisplayName,
             target: self,
             action: #selector(quit),
             keyEquivalent: "q"
         ))
-        statusItem.menu = menu
+        statusItem.menu = menuContainer
+
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self,
+            selector: #selector(frontAppChanged(_:)),
+            name: NSWorkspace.didActivateApplicationNotification,
+            object: nil
+        )
+
+        refreshUsage(force: true)
+        pollTimer = Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { [weak self] _ in
+            self?.refreshUsage(force: false)
+        }
     }
 
     func menuWillOpen(_: NSMenu) {
         syncLaunchAtLoginItem()
+        for (provider, item) in providerMenuItems {
+            item.title = providerMenuLine(provider: provider)
+        }
+    }
+
+    private func applyMenuBarIcon() {
+        if let img = NSImage(named: "MenuBarIcon") {
+            img.isTemplate = false
+            statusItem.button?.image = img
+            statusItem.button?.imagePosition = .imageLeading
+            return
+        }
+        if let img = NSImage(named: "AppIcon") {
+            img.isTemplate = false
+            statusItem.button?.image = img
+            statusItem.button?.imagePosition = .imageLeading
+        }
+    }
+
+    @objc private func frontAppChanged(_ notification: Notification) {
+        guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else {
+            return
+        }
+        if let provider = ProviderAvailability.provider(forBundleID: app.bundleIdentifier) {
+            foregroundProvider = provider
+            lastActiveProvider = provider
+            UserDefaults.standard.set(provider.rawValue, forKey: lastProviderDefaultsKey)
+            updateStatusBarTitle()
+        }
+    }
+
+    private func displayProvider() -> ProviderKind? {
+        if let foregroundProvider { return foregroundProvider }
+        let installed = ProviderAvailability.installedProviders()
+        if installed.contains(lastActiveProvider) { return lastActiveProvider }
+        return installed.first
+    }
+
+    private func updateStatusBarTitle() {
+        guard let provider = displayProvider() else {
+            statusItem.button?.title = " " + NSLocalizedString("status.no_providers", comment: "")
+            return
+        }
+
+        switch provider {
+        case .cursor:
+            if let snap = cursorSnapshot {
+                if snap.errorMessage == "not_logged_in" {
+                    statusItem.button?.title = " Cursor " + NSLocalizedString("status.not_logged_in", comment: "")
+                } else if snap.errorMessage != nil, cursorSnapshot?.totalPercentUsed == nil, snap.limitRequests == 0 {
+                    statusItem.button?.title = " Cursor " + NSLocalizedString("status.unavailable", comment: "")
+                } else {
+                    statusItem.button?.title = " \(provider.displayName) \(snap.statusLineSuffix)"
+                }
+            } else {
+                statusItem.button?.title = " \(provider.displayName) …"
+            }
+        case .codex:
+            if let snap = codexSnapshot {
+                if snap.errorMessage != nil, snap.weeklyUsedPercent == nil {
+                    statusItem.button?.title = " Codex " + NSLocalizedString("status.unavailable", comment: "")
+                } else {
+                    statusItem.button?.title = " \(provider.displayName) \(snap.menuBarPercentText)"
+                }
+            } else {
+                statusItem.button?.title = " \(provider.displayName) …"
+            }
+        }
+    }
+
+    private func rebuildProviderMenuItems() {
+        for item in providerMenuItems.values {
+            menuContainer.removeItem(item)
+        }
+        providerMenuItems.removeAll()
+
+        let installed = ProviderAvailability.installedProviders()
+        guard !installed.isEmpty else {
+            let item = NSMenuItem(title: NSLocalizedString("status.no_providers", comment: ""), action: nil, keyEquivalent: "")
+            item.isEnabled = false
+            menuContainer.insertItem(item, at: 0)
+            providerMenuItems[.cursor] = item
+            return
+        }
+
+        var index = 0
+        for provider in installed {
+            let title = providerMenuLine(provider: provider)
+            let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+            item.isEnabled = false
+            menuContainer.insertItem(item, at: index)
+            providerMenuItems[provider] = item
+            index += 1
+        }
+    }
+
+    private func providerMenuLine(provider: ProviderKind) -> String {
+        switch provider {
+        case .cursor:
+            guard let snap = cursorSnapshot else { return "\(provider.displayName) …" }
+            if snap.errorMessage == "not_logged_in" {
+                return "\(provider.displayName) — " + NSLocalizedString("status.not_logged_in", comment: "")
+            }
+            var line = "\(provider.displayName) — \(snap.statusLineSuffix)"
+            if let reset = snap.resetsAt {
+                line += " · " + formatReset(reset)
+            }
+            if let plan = snap.planName, !plan.isEmpty {
+                line += " · \(plan)"
+            }
+            return line
+        case .codex:
+            guard let snap = codexSnapshot else { return "\(provider.displayName) …" }
+            if snap.errorMessage != nil, snap.weeklyUsedPercent == nil {
+                return "\(provider.displayName) — " + NSLocalizedString("status.unavailable", comment: "")
+            }
+            var line = "\(provider.displayName) — " + NSLocalizedString("menu.codex_weekly", comment: "") + " \(snap.menuBarPercentText)"
+            if let primary = snap.primaryUsedPercent {
+                line += " · " + NSLocalizedString("menu.codex_primary", comment: "") + " \(formatPercent(primary))"
+            }
+            if let reset = snap.weeklyResetsAt {
+                line += " · " + formatReset(reset)
+            }
+            if let plan = snap.planType, !plan.isEmpty {
+                line += " · \(plan)"
+            }
+            return line
+        }
+    }
+
+    private func formatReset(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.dateStyle = .short
+        f.timeStyle = .short
+        return String(format: NSLocalizedString("menu.resets_at", comment: ""), f.string(from: date))
     }
 
     @objc private func refreshNow() {
-        placeholderMenuItem?.title = NSLocalizedString("menu.placeholder", comment: "")
-        statusItem.button?.title = " —"
+        refreshUsage(force: true)
+    }
+
+    private func refreshUsage(force: Bool) {
+        if isFetching { return }
+        if !force, let lastFetchTime, Date().timeIntervalSince(lastFetchTime) < pollInterval {
+            updateStatusBarTitle()
+            return
+        }
+
+        isFetching = true
+        statusItem.button?.title = " …"
+
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            guard let self else { return }
+            var cursorResult: CursorUsageSnapshot?
+            var codexResult: CodexUsageSnapshot?
+            if ProviderAvailability.isCursorInstalled() {
+                cursorResult = CursorUsageClient.fetchUsage()
+            }
+            if ProviderAvailability.isCodexInstalled() {
+                codexResult = CodexUsageClient.fetchUsage()
+            }
+            DispatchQueue.main.async {
+                self.isFetching = false
+                self.lastFetchTime = Date()
+                self.cursorSnapshot = cursorResult
+                self.codexSnapshot = codexResult
+                self.rebuildProviderMenuItems()
+                self.updateStatusBarTitle()
+            }
+        }
     }
 
     @objc private func restartApp() {
@@ -126,7 +310,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func sendFeedback() {
-        TomippeFeedbackForm.open(appName: appDisplayName)
+        TomippeFeedbackForm.open(appName: "AI Usage by tomippe")
     }
 
     private func sparkleCheckForUpdatesMenuItem() -> NSMenuItem {

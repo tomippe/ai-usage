@@ -21,19 +21,19 @@
 | 1.3 | Airtable フィードバック | `airtable-add-feedback-apps.py "AI Usage by tomippe"` |
 | 1.4 | `./build.sh -app` で日常確認 | フルビルドは紹介ページ・初回配布前でも可 |
 
-## フェーズ 2 — コア機能（Swift 移植）
+## フェーズ 2 — コア機能（Swift 移植）— **初版済（v0.1.0 ローカル）**
 
-優先順（handoff 正本どおり）:
+| 項目 | 状態 |
+|---|---|
+| Cursor 使用量 | `CursorUsageClient.swift`（`cursor-api.ts` 相当: SQLite / stripe+usage / GetCurrentPeriodUsage / チーム） |
+| Codex 使用量 | `CodexUsageClient.swift`（ChatGPT.app 同梱 `codex app-server`、`account/rateLimits/read`） |
+| 入っている判定 | `ProviderAvailability.swift` |
+| 前面アプリ切替 | `AIUsage.swift`（Cursor / Codex / CursorWrap、直近 UserDefaults） |
+| メニューバー | SVG 意匠 `MenuBarIcon`（`icon.svg` 由来）＋数値。SF Symbol ゲージは不使用 |
+| メニュー一覧 | プロバイダ行・週間/5h（Codex）・リセット・プラン |
+| ポーリング | 5 分、クールダウン中は再取得スキップ（前面切替は表示のみ） |
 
-1. **Cursor 使用量** — `cursor-usage/src/cursor-api.ts` を Swift 化（SQLite + WAL、`state.vscdb`、JWT、usage API）
-2. **Codex 使用量** — `docs/providers.md` の `~/.codex` / ChatGPT.app 経路
-3. **「入っている」判定** — `product.md` の表（アプリ存在 or 認証ファイル）
-4. **前面アプリ切替** — `NSWorkspace.didActivateApplicationNotification`、bundle id 表 + CursorWrap 確認
-5. **メニューバー表示** — 前面／直近アクティブの％、未ログイン時の警告
-6. **メニュー一覧** — 入っているプロバイダのみ、％・リセット・プラン名
-7. **ポーリング** — 既定 5 分、失敗時はキャッシュ維持
-
-後回し: Claude、ダッシュボード（WKWebView）、モデル内訳。
+後回し: Claude、ダッシュボード（WKWebView）、モデル内訳、拡張の minimalMode / オンデマンド併記、Cursor WAL 手動走査（現状は SQLite3 読取）。
 
 ## フェーズ 3 — 紹介ページ・ポリシー
 

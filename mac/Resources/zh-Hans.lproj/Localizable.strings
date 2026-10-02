@@ -8,7 +8,12 @@
 "move.error_title" = "无法移动";
 "move.error_message" = "无法复制到“应用程序”。请手动移动。";
 "move.ok" = "好";
-"menu.placeholder" = "用量数据 — 即将推出";
+"status.no_providers" = "未检测到 AI 工具";
+"status.not_logged_in" = "未登录";
+"status.unavailable" = "无法获取";
+"menu.codex_weekly" = "每周";
+"menu.codex_primary" = "5小时";
+"menu.resets_at" = "重置 %@";
 "menu.refresh" = "立即刷新";
 "menu.login_item" = "登录时打开";
 "menu.about_format" = "关于 %@...";

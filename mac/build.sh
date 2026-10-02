@@ -93,14 +93,14 @@ MOVE_SWIFT="$SCRIPT_DIR/../../build-common/MoveToApplicationsFolder.swift"
 TOMIPPE_ABOUT="$SCRIPT_DIR/../../build-common/TomippeAppAbout.swift"
 TOMIPPE_RELAUNCH="$SCRIPT_DIR/../../build-common/TomippeRelaunch.swift"
 TOMIPPE_FEEDBACK="$SCRIPT_DIR/../../build-common/TomippeFeedbackForm.swift"
-SWIFT_SOURCES="AIUsage.swift $MOVE_SWIFT $TOMIPPE_ABOUT $TOMIPPE_RELAUNCH $TOMIPPE_FEEDBACK"
+SWIFT_SOURCES="UsageTypes.swift CursorUsageClient.swift CodexUsageClient.swift ProviderAvailability.swift AIUsage.swift $MOVE_SWIFT $TOMIPPE_ABOUT $TOMIPPE_RELAUNCH $TOMIPPE_FEEDBACK"
 for src in $SWIFT_SOURCES; do
     if [ ! -f "$src" ]; then
         echo "❌ $src がありません。"
         exit 1
     fi
 done
-SWIFT_FLAGS="-parse-as-library -framework Cocoa -framework CoreServices -framework ServiceManagement -F Sparkle.framework/.. -framework Sparkle -Xlinker -rpath -Xlinker @executable_path/../Frameworks"
+SWIFT_FLAGS="-parse-as-library -framework Cocoa -framework CoreServices -framework ServiceManagement -F Sparkle.framework/.. -framework Sparkle -lsqlite3 -Xlinker -rpath -Xlinker @executable_path/../Frameworks"
 UNIVERSAL_BIN="$BUILD_DIR/${APP_EXE}_universal"
 
 echo "📦 コンパイル中 (arm64)..."
@@ -140,6 +140,10 @@ create_app_bundle() {
         ICON_BLOCK="
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>"
+    fi
+    if [ -f "icon.svg" ]; then
+        magick -background none "icon.svg" -resize 22x22 "$RESOURCES/MenuBarIcon.png"
+        magick -background none "icon.svg" -resize 44x44 "$RESOURCES/MenuBarIcon@2x.png"
     fi
     if [ -f "$(mac_apps_about_logo_path)" ]; then
         cp "$(mac_apps_about_logo_path)" "$RESOURCES/"

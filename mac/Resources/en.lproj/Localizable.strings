@@ -8,7 +8,12 @@
 "move.error_title" = "Couldn’t Move";
 "move.error_message" = "Couldn’t copy the app to Applications. Please move it manually.";
 "move.ok" = "OK";
-"menu.placeholder" = "Usage data — coming soon";
+"status.no_providers" = "No AI tools detected";
+"status.not_logged_in" = "Not signed in";
+"status.unavailable" = "Unavailable";
+"menu.codex_weekly" = "Weekly";
+"menu.codex_primary" = "5h";
+"menu.resets_at" = "Resets %@";
 "menu.refresh" = "Refresh Now";
 "menu.login_item" = "Open at Login";
 "menu.about_format" = "About %@...";
