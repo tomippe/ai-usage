@@ -22,7 +22,7 @@ alwaysApply: true
 
 | コマンド | 内容 |
 |---|---|
-| `./build.sh -app` | コンパイル・バンドル作成・アドホック署名のみ |
+| `./build.sh -app` | コンパイル・バンドル作成・アドホック署名 → 実行中なら終了して `build/` の .app を起動 |
 | `./build.sh` | 直接配布版（Developer ID・ノータライズ・ステープル）→ 配布・FTP・版上げ・Git コミット |
 | `./build.sh -cm "メッセージ"` | コミットメッセージを指定 |
 | `./build.sh -noverup` | ビルド後の `version.txt` インクリメントをスキップ |

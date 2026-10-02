@@ -25,11 +25,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var cursorDashboardBundle: CursorDashboardBundle?
     private let cursorDashboardView = CursorDashboardMenuView()
     private var codexSnapshot: CodexUsageSnapshot?
+    private var claudeSnapshot: ClaudeUsageSnapshot?
     private var lastFetchTime: Date?
     private var isFetching = false
     private var pollTimer: Timer?
+    private var claudeSnapshotTimer: Timer?
     private var lastActiveProvider: ProviderKind = .cursor
     private var foregroundProvider: ProviderKind?
+    private var currencyMenuRootItem: NSMenuItem?
+    private var isStatusMenuOpen = false
+    private var pendingProviderMenuRebuild = false
 
     func applicationWillFinishLaunching(_: Notification) {
         MoveToApplicationsFolder.moveIfNecessary()
@@ -46,6 +51,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        if let executablePath = Bundle.main.executablePath {
+            ClaudeUsageClient.installStatusLineIfAvailable(executablePath: executablePath)
+        }
+        claudeSnapshot = ClaudeUsageClient.readSnapshot()
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleEffectiveAppearanceChanged),
@@ -60,6 +69,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         rebuildProviderMenuItems()
         menuContainer.addItem(.separator())
         menuContainer.addItem(menuItem(NSLocalizedString("menu.refresh", comment: ""), #selector(refreshNow), "r"))
+        menuContainer.addItem(buildCurrencyMenuItem())
 
         if #available(macOS 13.0, *) {
             let loginItem = NSMenuItem(
@@ -102,6 +112,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         pollTimer = Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { [weak self] _ in
             self?.refreshUsage(force: false)
         }
+        claudeSnapshotTimer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            let snapshot = ClaudeUsageClient.readSnapshot()
+            if snapshot?.fetchedAt != self.claudeSnapshot?.fetchedAt {
+                self.claudeSnapshot = snapshot
+                self.updateStatusBarTitle()
+                self.syncProviderMenuItemTitles()
+            }
+        }
 
         DispatchQueue.main.async { [weak self] in
             self?.applyMenuBarIcon()
@@ -113,21 +132,31 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func menuWillOpen(_ menu: NSMenu) {
-        syncLaunchAtLoginItem()
-        for (provider, item) in providerMenuItems {
-            if provider == .cursor, item.submenu != nil {
-                item.title = providerMenuLine(provider: provider)
-                if let bundle = cursorDashboardBundle {
-                    cursorDashboardView.update(bundle: bundle)
-                    cursorDashboardView.refreshMenuLayoutSize()
-                }
-            } else {
-                item.title = providerMenuLine(provider: provider)
+        if menu != menuContainer {
+            if menu.items.first?.view === cursorDashboardView, let bundle = cursorDashboardBundle {
+                cursorDashboardView.update(bundle: bundle)
+                cursorDashboardView.refreshMenuLayoutSize()
             }
+            return
         }
-        if menu == menuContainer, let bundle = cursorDashboardBundle {
+        isStatusMenuOpen = true
+        syncLaunchAtLoginItem()
+        syncCurrencyMenuSelection()
+        for (provider, item) in providerMenuItems {
+            item.title = providerMenuLine(provider: provider)
+        }
+        if let bundle = cursorDashboardBundle {
             cursorDashboardView.update(bundle: bundle)
             cursorDashboardView.refreshMenuLayoutSize()
+        }
+    }
+
+    func menuDidClose(_ menu: NSMenu) {
+        guard menu == menuContainer else { return }
+        isStatusMenuOpen = false
+        if pendingProviderMenuRebuild {
+            pendingProviderMenuRebuild = false
+            rebuildProviderMenuItems()
         }
     }
 
@@ -192,25 +221,47 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         case .cursor:
             if let snap = cursorSnapshot {
                 if snap.errorMessage == "not_logged_in" {
-                    statusItem.button?.title = " Cursor " + NSLocalizedString("status.not_logged_in", comment: "")
+                    statusItem.button?.title = " " + NSLocalizedString("status.not_logged_in", comment: "")
                 } else if snap.errorMessage != nil, cursorSnapshot?.totalPercentUsed == nil, snap.limitRequests == 0 {
-                    statusItem.button?.title = " Cursor " + NSLocalizedString("status.unavailable", comment: "")
+                    statusItem.button?.title = " " + NSLocalizedString("status.unavailable", comment: "")
                 } else {
-                    statusItem.button?.title = " \(provider.displayName) \(snap.statusLineSuffix)"
+                    statusItem.button?.title = " " + snap.menuBarTitleText(localExchangeRate: effectiveLocalExchangeRate())
                 }
             } else {
-                statusItem.button?.title = " \(provider.displayName) …"
+                statusItem.button?.title = " …"
             }
         case .codex:
             if let snap = codexSnapshot {
-                if snap.errorMessage != nil, snap.weeklyUsedPercent == nil {
-                    statusItem.button?.title = " Codex " + NSLocalizedString("status.unavailable", comment: "")
+                if snap.errorMessage != nil, snap.weeklyUsedPercent == nil, snap.primaryUsedPercent == nil {
+                    statusItem.button?.title = " " + NSLocalizedString("status.unavailable", comment: "")
                 } else {
-                    statusItem.button?.title = " \(provider.displayName) \(snap.menuBarPercentText)"
+                    statusItem.button?.title = " " + snap.menuBarTitleText()
                 }
             } else {
-                statusItem.button?.title = " \(provider.displayName) …"
+                statusItem.button?.title = " …"
             }
+        case .claude:
+            if let snap = claudeSnapshot, snap.fiveHourUsedPercent != nil || snap.sevenDayUsedPercent != nil {
+                statusItem.button?.title = " " + snap.menuBarTitleText()
+            } else {
+                statusItem.button?.title = " " + NSLocalizedString("status.awaiting_claude_code", comment: "")
+            }
+        }
+    }
+
+    /// ポーリング完了時は呼ばない（メニュー表示中に項目を外すと落ちる）。タイトルだけ更新する。
+    private func syncProviderMenuItemTitles() {
+        let installed = ProviderAvailability.installedProviders()
+        if Set(installed) != Set(providerMenuItems.keys) {
+            if isStatusMenuOpen {
+                pendingProviderMenuRebuild = true
+            } else {
+                rebuildProviderMenuItems()
+            }
+            return
+        }
+        for (provider, item) in providerMenuItems {
+            item.title = providerMenuLine(provider: provider)
         }
     }
 
@@ -235,19 +286,65 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         var index = 0
         for provider in installed {
             let title = providerMenuLine(provider: provider)
-            let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+            let item = NSMenuItem(title: title, action: #selector(activateProviderApp(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = provider.rawValue
             if provider == .cursor {
                 let sub = NSMenu()
+                sub.delegate = self
                 let dashItem = NSMenuItem()
                 dashItem.view = cursorDashboardView
                 sub.addItem(dashItem)
                 item.submenu = sub
-            } else {
-                item.isEnabled = false
             }
             menuContainer.insertItem(item, at: index)
             providerMenuItems[provider] = item
             index += 1
+        }
+    }
+
+    @objc private func activateProviderApp(_ sender: NSMenuItem) {
+        guard let raw = sender.representedObject as? String,
+              let provider = ProviderKind(rawValue: raw) else { return }
+        activateApplication(for: provider)
+    }
+
+    private func activateApplication(for provider: ProviderKind) {
+        if provider == .claude {
+            foregroundProvider = nil
+            lastActiveProvider = provider
+            UserDefaults.standard.set(provider.rawValue, forKey: lastProviderDefaultsKey)
+            updateStatusBarTitle()
+            applyMenuBarIcon()
+            return
+        }
+        let appURL: URL? = {
+            switch provider {
+            case .cursor:
+                guard let path = ProviderAvailability.cursorAppPath() else { return nil }
+                return URL(fileURLWithPath: path)
+            case .codex:
+                guard let path = ProviderAvailability.codexAppPath() else { return nil }
+                return URL(fileURLWithPath: path)
+            case .claude:
+                return nil
+            }
+        }()
+        guard let appURL else { return }
+
+        let config = NSWorkspace.OpenConfiguration()
+        config.activates = true
+        NSWorkspace.shared.openApplication(at: appURL, configuration: config) { [weak self] _, error in
+            guard let self else { return }
+            DispatchQueue.main.async {
+                if error == nil {
+                    self.foregroundProvider = provider
+                    self.lastActiveProvider = provider
+                    UserDefaults.standard.set(provider.rawValue, forKey: lastProviderDefaultsKey)
+                    self.updateStatusBarTitle()
+                    self.applyMenuBarIcon()
+                }
+            }
         }
     }
 
@@ -258,30 +355,85 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             if snap.errorMessage == "not_logged_in" {
                 return "\(provider.displayName) — " + NSLocalizedString("status.not_logged_in", comment: "")
             }
-            var line = "\(provider.displayName) — \(snap.statusLineSuffix)"
-            if let reset = snap.resetsAt {
-                line += " · " + formatReset(reset)
-            }
-            if let plan = snap.planName, !plan.isEmpty {
-                line += " · \(plan)"
-            }
-            return line
+            return snap.cursorMenuItemTitle(localExchangeRate: effectiveLocalExchangeRate())
         case .codex:
-            guard let snap = codexSnapshot else { return "\(provider.displayName) …" }
-            if snap.errorMessage != nil, snap.weeklyUsedPercent == nil {
-                return "\(provider.displayName) — " + NSLocalizedString("status.unavailable", comment: "")
+            let name = provider.menuDisplayName
+            guard let snap = codexSnapshot else { return "\(name) …" }
+            if snap.errorMessage != nil, snap.weeklyUsedPercent == nil, snap.primaryUsedPercent == nil {
+                return "\(name) — " + NSLocalizedString("status.unavailable", comment: "")
             }
-            var line = "\(provider.displayName) — " + NSLocalizedString("menu.codex_weekly", comment: "") + " \(snap.menuBarPercentText)"
-            if let primary = snap.primaryUsedPercent {
-                line += " · " + NSLocalizedString("menu.codex_primary", comment: "") + " \(formatPercent(primary))"
+            return snap.codexMenuItemTitle()
+        case .claude:
+            guard let snap = claudeSnapshot else { return "Claude — " + NSLocalizedString("status.awaiting_claude_code", comment: "") }
+            return snap.menuItemTitle()
+        }
+    }
+
+    private func effectiveLocalExchangeRate() -> Double? {
+        ExchangeRateService.effectiveRate(for: DisplayCurrency.current)
+    }
+
+    private func buildCurrencyMenuItem() -> NSMenuItem {
+        let root = NSMenuItem(title: NSLocalizedString("menu.currency", comment: ""), action: nil, keyEquivalent: "")
+        let submenu = NSMenu()
+        for currency in DisplayCurrency.allCases {
+            let item = NSMenuItem(
+                title: NSLocalizedString(currency.menuTitleKey, comment: ""),
+                action: #selector(selectDisplayCurrency(_:)),
+                keyEquivalent: ""
+            )
+            item.target = self
+            item.representedObject = currency.rawValue
+            item.state = DisplayCurrency.current == currency ? .on : .off
+            submenu.addItem(item)
+        }
+        root.submenu = submenu
+        currencyMenuRootItem = root
+        return root
+    }
+
+    private func syncCurrencyMenuSelection() {
+        guard let submenu = currencyMenuRootItem?.submenu else { return }
+        for item in submenu.items {
+            guard let raw = item.representedObject as? String,
+                  let currency = DisplayCurrency(rawValue: raw) else { continue }
+            item.state = DisplayCurrency.current == currency ? .on : .off
+        }
+    }
+
+    @objc private func selectDisplayCurrency(_ sender: NSMenuItem) {
+        guard let raw = sender.representedObject as? String,
+              let currency = DisplayCurrency(rawValue: raw) else { return }
+        DisplayCurrency.setCurrent(currency)
+        syncCurrencyMenuSelection()
+        refreshExchangeRateIfNeeded(for: cursorSnapshot)
+        updateStatusBarTitle()
+        for (provider, item) in providerMenuItems {
+            item.title = providerMenuLine(provider: provider)
+        }
+        if let bundle = cursorDashboardBundle {
+            cursorDashboardView.update(bundle: bundle)
+            cursorDashboardView.refreshMenuLayoutSize()
+        }
+    }
+
+    private func refreshExchangeRateIfNeeded(for snapshot: CursorUsageSnapshot?) {
+        _ = snapshot
+        let currency = DisplayCurrency.current
+        guard currency != .usd else { return }
+        ExchangeRateService.fetchUSD(to: currency) { [weak self] rate in
+            guard let self else { return }
+            if let rate {
+                ExchangeRateService.setLiveRate(rate, for: currency)
             }
-            if let reset = snap.weeklyResetsAt {
-                line += " · " + formatReset(reset)
+            self.updateStatusBarTitle()
+            for (provider, item) in self.providerMenuItems {
+                item.title = self.providerMenuLine(provider: provider)
             }
-            if let plan = snap.planType, !plan.isEmpty {
-                line += " · \(plan)"
+            if let bundle = self.cursorDashboardBundle {
+                self.cursorDashboardView.update(bundle: bundle)
+                self.cursorDashboardView.refreshMenuLayoutSize()
             }
-            return line
         }
     }
 
@@ -327,9 +479,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     self.cursorDashboardView.update(bundle: cursorDash)
                 }
                 self.codexSnapshot = codexResult
-                self.rebuildProviderMenuItems()
+                self.syncProviderMenuItemTitles()
                 self.updateStatusBarTitle()
                 self.applyMenuBarIcon()
+                self.refreshExchangeRateIfNeeded(for: cursorResult)
             }
         }
     }
@@ -438,6 +591,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 @main
 struct AIUsageApp {
     static func main() {
+        if CommandLine.arguments.contains("--claude-statusline") {
+            ClaudeUsageClient.consumeStatusLineInput()
+            return
+        }
         let app = NSApplication.shared
         let delegate = AppDelegate()
         app.delegate = delegate

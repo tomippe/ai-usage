@@ -3,11 +3,22 @@ import Foundation
 enum ProviderKind: String, CaseIterable, Codable {
     case cursor
     case codex
+    case claude
 
     var displayName: String {
         switch self {
         case .cursor: return "Cursor"
         case .codex: return "Codex"
+        case .claude: return "Claude Code"
+        }
+    }
+
+    /// メニュー表示名（ChatGPT.app / Codex 枠）
+    var menuDisplayName: String {
+        switch self {
+        case .cursor: return "Cursor"
+        case .codex: return "ChatGPT"
+        case .claude: return "Claude"
         }
     }
 }
@@ -64,12 +75,14 @@ struct CursorUsageSnapshot {
     var fetchedAt: Date
     var errorMessage: String?
 
+    /// メニューバー／メニュー行の定額合計（残り％）
     var menuBarPercentText: String {
         if let pct = totalPercentUsed {
-            return formatPercent(pct)
+            return formatPercent(remainingPercent(fromUsed: pct))
         }
         if limitRequests > 0 {
-            return "\(usedRequests)/\(limitRequests)"
+            let left = max(0, limitRequests - usedRequests)
+            return formatPercent(Double(left) / Double(limitRequests) * 100)
         }
         return "—"
     }
@@ -81,6 +94,40 @@ struct CursorUsageSnapshot {
         }
         return body
     }
+
+    var showsOnDemandInStatus: Bool {
+        onDemand != .disabled
+    }
+
+    /// メニューバー／括弧内の「純正 … / API … [/ 従量]」
+    func cursorAutoApiOnDemandText(localExchangeRate: Double?) -> String {
+        let auto = autoPercentUsed.map { formatPercent(remainingPercent(fromUsed: $0)) } ?? "—"
+        let api = apiPercentUsed.map { formatPercent(remainingPercent(fromUsed: $0)) } ?? "—"
+        var text = String(format: NSLocalizedString("status.cursor_auto_api", comment: ""), auto, api)
+        guard showsOnDemandInStatus else { return text }
+        text += onDemandSuffix(localExchangeRate: localExchangeRate)
+        return text
+    }
+
+    private func onDemandSuffix(localExchangeRate: Double?) -> String {
+        CurrencyDisplayFormatter.menuBarOnDemandSuffix(dollars: onDemandSpendDollars, rate: localExchangeRate)
+    }
+
+    /// メニューバー（アイコン横）。アプリ名は付けない。
+    func menuBarTitleText(localExchangeRate: Double?) -> String {
+        cursorAutoApiOnDemandText(localExchangeRate: localExchangeRate)
+    }
+
+    /// 親メニュー行: Cursor - Ultra 84.7% (純正 … / API … / ¥…)
+    func cursorMenuItemTitle(localExchangeRate: Double?) -> String {
+        let total = menuBarPercentText
+        let plan = formatPlanName(planName) ?? planName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let detail = cursorAutoApiOnDemandText(localExchangeRate: localExchangeRate)
+        if plan.isEmpty {
+            return String(format: NSLocalizedString("menu.cursor_line_no_plan", comment: ""), total, detail)
+        }
+        return String(format: NSLocalizedString("menu.cursor_line", comment: ""), plan, total, detail)
+    }
 }
 
 struct CodexUsageSnapshot {
@@ -89,13 +136,76 @@ struct CodexUsageSnapshot {
     var planType: String?
     var weeklyResetsAt: Date?
     var primaryResetsAt: Date?
+    var rateLimitResetCreditsAvailable: Int?
     var fetchedAt: Date
     var errorMessage: String?
 
-    /// メニューバーは週間枠（docs/providers.md）
-    var menuBarPercentText: String {
-        guard let pct = weeklyUsedPercent else { return "—" }
-        return formatPercent(pct)
+    /// メニューバー: 5時間 98% / 週間 75%（残り％）
+    func menuBarTitleText() -> String {
+        var parts: [String] = []
+        if let used = primaryUsedPercent {
+            let rem = formatPercent(remainingPercent(fromUsed: used))
+            parts.append(String(format: NSLocalizedString("menu.codex_primary_short", comment: ""), rem))
+        }
+        if let used = weeklyUsedPercent {
+            let rem = formatPercent(remainingPercent(fromUsed: used))
+            parts.append(String(format: NSLocalizedString("menu.codex_weekly_short", comment: ""), rem))
+        }
+        return parts.isEmpty ? "—" : parts.joined(separator: " / ")
+    }
+
+    /// 例: ChatGPT - Plus 5時間 98%(23:01) / 週間 75%(10/4) / 1回リセット可能
+    func codexMenuItemTitle() -> String {
+        var segments: [String] = []
+        if let used = primaryUsedPercent {
+            let rem = formatPercent(remainingPercent(fromUsed: used))
+            let when = formatCodexResetClock(primaryResetsAt)
+            segments.append(String(format: NSLocalizedString("menu.codex_primary_remaining", comment: ""), rem, when))
+        }
+        if let used = weeklyUsedPercent {
+            let rem = formatPercent(remainingPercent(fromUsed: used))
+            let when = formatCodexResetDay(weeklyResetsAt)
+            segments.append(String(format: NSLocalizedString("menu.codex_weekly_remaining", comment: ""), rem, when))
+        }
+        if let count = rateLimitResetCreditsAvailable, count > 0 {
+            segments.append(String(format: NSLocalizedString("menu.codex_reset_credits", comment: ""), count))
+        }
+        let plan = formatPlanName(planType).map { $0 + " " } ?? ""
+        let name = ProviderKind.codex.menuDisplayName
+        if segments.isEmpty {
+            return "\(name) — " + NSLocalizedString("status.unavailable", comment: "")
+        }
+        return "\(name) - \(plan)\(segments.joined(separator: " / "))"
+    }
+}
+
+struct ClaudeUsageSnapshot {
+    var fiveHourUsedPercent: Double?
+    var sevenDayUsedPercent: Double?
+    var fiveHourResetsAt: Date?
+    var sevenDayResetsAt: Date?
+    var fetchedAt: Date
+
+    func menuBarTitleText() -> String {
+        var parts: [String] = []
+        if let used = fiveHourUsedPercent {
+            parts.append(String(format: NSLocalizedString("menu.claude_five_hour_short", comment: ""), formatPercent(remainingPercent(fromUsed: used))))
+        }
+        if let used = sevenDayUsedPercent {
+            parts.append(String(format: NSLocalizedString("menu.claude_seven_day_short", comment: ""), formatPercent(remainingPercent(fromUsed: used))))
+        }
+        return parts.isEmpty ? "—" : parts.joined(separator: " / ")
+    }
+
+    func menuItemTitle() -> String {
+        var parts: [String] = []
+        if let used = fiveHourUsedPercent {
+            parts.append(String(format: NSLocalizedString("menu.claude_five_hour", comment: ""), formatPercent(remainingPercent(fromUsed: used)), formatCodexResetClock(fiveHourResetsAt)))
+        }
+        if let used = sevenDayUsedPercent {
+            parts.append(String(format: NSLocalizedString("menu.claude_seven_day", comment: ""), formatPercent(remainingPercent(fromUsed: used)), formatCodexResetDay(sevenDayResetsAt)))
+        }
+        return parts.isEmpty ? "Claude — " + NSLocalizedString("status.awaiting_claude_code", comment: "") : "Claude - " + parts.joined(separator: " / ")
     }
 }
 
@@ -117,6 +227,26 @@ func formatDollarsFromCents(_ cents: Int) -> String {
     String(format: "$%.2f", Double(cents) / 100)
 }
 
+func remainingPercent(fromUsed used: Double) -> Double {
+    max(0, min(100, 100 - used))
+}
+
+func formatCodexResetClock(_ date: Date?) -> String {
+    guard let date else { return "—" }
+    let f = DateFormatter()
+    f.locale = Locale.current
+    f.dateFormat = "H:mm"
+    return f.string(from: date)
+}
+
+func formatCodexResetDay(_ date: Date?) -> String {
+    guard let date else { return "—" }
+    let f = DateFormatter()
+    f.locale = Locale.current
+    f.dateFormat = "M/d"
+    return f.string(from: date)
+}
+
 func formatPercent(_ value: Double) -> String {
     let rounded = value.rounded()
     if abs(value - rounded) < 0.05 {
@@ -130,6 +260,7 @@ func formatPlanName(_ raw: String?) -> String? {
     let key = raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     let labels: [String: String] = [
         "ultra": "Ultra", "pro": "Pro", "pro_plus": "Pro+", "proplus": "Pro+", "pro+": "Pro+",
+        "plus": "Plus",
         "business": "Business", "enterprise": "Enterprise", "team": "Team", "free": "Free", "hobby": "Hobby",
     ]
     if let label = labels[key] { return label }

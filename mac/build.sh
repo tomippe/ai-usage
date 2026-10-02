@@ -30,6 +30,7 @@ source "$SCRIPT_DIR/../../build-common/ftp-upload.sh"
 source "$SCRIPT_DIR/../../build-common/git-commit.sh"
 source "$SCRIPT_DIR/../../build-common/mac-sparkle-lib.sh"
 source "$SCRIPT_DIR/../../build-common/mac-sparkle-dist.sh"
+source "$SCRIPT_DIR/../../build-common/mac-relaunch-built-app.sh"
 
 APP_ONLY=false
 COMMIT_MSG=""
@@ -93,7 +94,7 @@ MOVE_SWIFT="$SCRIPT_DIR/../../build-common/MoveToApplicationsFolder.swift"
 TOMIPPE_ABOUT="$SCRIPT_DIR/../../build-common/TomippeAppAbout.swift"
 TOMIPPE_RELAUNCH="$SCRIPT_DIR/../../build-common/TomippeRelaunch.swift"
 TOMIPPE_FEEDBACK="$SCRIPT_DIR/../../build-common/TomippeFeedbackForm.swift"
-SWIFT_SOURCES="UsageTypes.swift CursorUsageClient.swift CursorModelBreakdown.swift CursorDashboardMenuView.swift MenuBarIconRenderer.swift ProviderAppIcon.swift CodexUsageClient.swift ProviderAvailability.swift AIUsage.swift $MOVE_SWIFT $TOMIPPE_ABOUT $TOMIPPE_RELAUNCH $TOMIPPE_FEEDBACK"
+SWIFT_SOURCES="UsageTypes.swift ExchangeRateService.swift CursorUsageClient.swift CursorModelBreakdown.swift CursorDashboardMenuView.swift MenuBarIconRenderer.swift ProviderAppIcon.swift CodexUsageClient.swift ClaudeUsageClient.swift ProviderAvailability.swift AIUsage.swift $MOVE_SWIFT $TOMIPPE_ABOUT $TOMIPPE_RELAUNCH $TOMIPPE_FEEDBACK"
 for src in $SWIFT_SOURCES; do
     if [ ! -f "$src" ]; then
         echo "❌ $src がありません。"
@@ -218,7 +219,7 @@ if $APP_ONLY; then
     codesign --force --deep --sign - --identifier "$BUNDLE_ID" "$DIRECT_BUNDLE"
     echo ""
     echo "✅ AI Usage v$VERSION — アプリバンドル作成完了! (-app モード)"
-    echo "  open \"$DIRECT_BUNDLE\""
+    mac_relaunch_built_app "$DIRECT_BUNDLE" "$APP_EXE"
     exit 0
 fi
 
