@@ -1,0 +1,20 @@
+build/
+mac/build/
+*.provisionprofile
+.DS_Store
+.env
+
+/AIUsage.app/
+/AI Usage.app/
+/mac/AIUsage.app/
+/mac/AI Usage.app/
+
+Sparkle.framework/
+Sparkle_bin/
+mac/Sparkle.framework/
+mac/Sparkle_bin/
+.derived_data/
+mac/.derived_data/
+AppIcon.icns
+mac/AppIcon.icns
+mac/icon.avif

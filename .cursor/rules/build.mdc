@@ -1,0 +1,45 @@
+---
+description: AI Usage のビルド仕様
+alwaysApply: true
+---
+
+# AI Usage ビルド仕様
+
+**共通ルール（自動では読み込まれないため、ファイル編集・ビルド・コミットの前に必ず Read ツールで読むこと）:**
+
+- `/Users/tomippe/Cursor/build-common/.cursor/rules/build-system.mdc`
+
+## 概要
+
+- **種別**: ネイティブ Mac（Swift / Cocoa、メニューバー、`LSUIElement`）
+- **Mac ソース**: `mac/AIUsage.swift`（+ `build-common` の MoveToApplications / About / Relaunch / Feedback）
+- **ビルド**: `./build.sh`（`mac/build.sh` に委譲。Sparkle 直接配布パイプライン）
+- **デプロイ（Mac）**: `../apps.tomippe.jp/ai-usage/`（DMG・manifest.json を FTP 同期）
+- **紹介ページ**: WordPress（`docs/app-page.md`、ローカル `.env` は `.env.example` を参照）
+- **Windows / MAS**: 初回対象外
+
+## ビルドコマンド（Mac）
+
+| コマンド | 内容 |
+|---|---|
+| `./build.sh -app` | コンパイル・バンドル作成・アドホック署名のみ |
+| `./build.sh` | 直接配布版（Developer ID・ノータライズ・ステープル）→ 配布・FTP・版上げ・Git コミット |
+| `./build.sh -cm "メッセージ"` | コミットメッセージを指定 |
+| `./build.sh -noverup` | ビルド後の `version.txt` インクリメントをスキップ |
+| `cd mac && ./build.sh -app` | Mac のみ確認（ルートと同じ） |
+
+## 固有設定
+
+### Mac
+
+- **Bundle ID**: `jp.tomippe.ai-usage`
+- **バージョン**: ルート `version.txt`（ビルド時に `Info.plist` に反映）
+- **直接配布**: `mac/build/AI Usage.app` → `../apps.tomippe.jp/ai-usage/`
+- **バンドル名**: `AI Usage.app`（実行ファイル名は `AIUsage`）
+- **Sparkle**: `mac/Sparkle.framework` / `mac/Sparkle_bin` は `disk-monitor/mac` への symlink（git 管理外）
+- **ローカライズ**: `mac/Resources/{en,ja,zh-Hans}.lproj`
+- **フィードバック**: `TomippeFeedbackForm.open(appName: "AI Usage")`。Airtable App 選択肢は初回配布前に `airtable-add-feedback-apps.py "AI Usage by tomippe"`
+
+## Git — フルビルド後の main 統合
+
+`build.sh` 成功後: 作業ブランチを `origin/main` にマージ・push（他 tomippe Mac アプリと同じ。リポジトリ未初期化の場合は先に `git init` と remote 設定）。
