@@ -37,7 +37,7 @@ private final class SummaryCardView: NSView {
         layer?.borderColor = CursorDashboardTheme.cardBorder.cgColor
 
         stack.orientation = .vertical
-        stack.alignment = .leading
+        stack.alignment = .width
         stack.spacing = 6
         stack.translatesAutoresizingMaskIntoConstraints = false
         addSubview(stack)
@@ -50,10 +50,7 @@ private final class SummaryCardView: NSView {
         stack.addArrangedSubview(t)
         stack.addArrangedSubview(val)
         if let ratio {
-            let bar = DashboardProgressBar(ratio: ratio / 100)
-            bar.translatesAutoresizingMaskIntoConstraints = false
-            bar.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
-            stack.addArrangedSubview(bar)
+            stack.addArrangedSubview(DashboardProgressBar(ratio: ratio / 100))
         }
         if let footer, !footer.isEmpty {
             let foot = NSTextField(wrappingLabelWithString: footer)
