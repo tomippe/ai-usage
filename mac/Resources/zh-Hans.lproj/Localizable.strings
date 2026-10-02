@@ -19,8 +19,11 @@
 "dash.card.auto" = "原生模型";
 "dash.card.api" = "API";
 "dash.card.ondemand" = "按需用量";
-"dash.reset" = "%2$d 天后（%1$@）重置";
-"dash.duration.24h" = "24小时";
+"dash.reset" = "%2$@ 前还有 %1$d 天重置";
+"dash.reset.singular" = "%2$@ 前还有 %1$d 天重置";
+"dash.ondemand.pay_extra" = "超出套餐上限部分按量计费";
+"dash.ondemand.unlimited" = "无限制";
+"dash.duration.24h" = "最近24小时";
 "dash.duration.7d" = "7天";
 "dash.duration.30d" = "30天";
 "dash.duration.cycle" = "账单周期";

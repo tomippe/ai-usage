@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 
 enum ProviderAvailability {
@@ -42,6 +43,38 @@ enum ProviderAvailability {
 
     static func cursorDatabasePath() -> String {
         NSHomeDirectory() + "/Library/Application Support/Cursor/User/globalStorage/state.vscdb"
+    }
+
+    /// `/Applications/Cursor.app` または登録済み Cursor 系 .app
+    static func cursorAppPath() -> String? {
+        let candidates = [
+            "/Applications/Cursor.app",
+            NSHomeDirectory() + "/Applications/Cursor.app",
+        ]
+        for path in candidates where FileManager.default.fileExists(atPath: path) {
+            return path
+        }
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.todesktop.230313mzl4w4u92") {
+            return url.path
+        }
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.tomippe.CursorWrap") {
+            return url.path
+        }
+        return nil
+    }
+
+    static func codexAppPath() -> String? {
+        let candidates = [
+            "/Applications/ChatGPT.app",
+            NSHomeDirectory() + "/Applications/ChatGPT.app",
+        ]
+        for path in candidates where FileManager.default.fileExists(atPath: path) {
+            return path
+        }
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: codexBundleID) {
+            return url.path
+        }
+        return nil
     }
 
     static func codexBinaryPath() -> String? {

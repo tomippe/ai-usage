@@ -93,7 +93,7 @@ MOVE_SWIFT="$SCRIPT_DIR/../../build-common/MoveToApplicationsFolder.swift"
 TOMIPPE_ABOUT="$SCRIPT_DIR/../../build-common/TomippeAppAbout.swift"
 TOMIPPE_RELAUNCH="$SCRIPT_DIR/../../build-common/TomippeRelaunch.swift"
 TOMIPPE_FEEDBACK="$SCRIPT_DIR/../../build-common/TomippeFeedbackForm.swift"
-SWIFT_SOURCES="UsageTypes.swift CursorUsageClient.swift CursorModelBreakdown.swift CursorDashboardMenuView.swift MenuBarIconRenderer.swift CodexUsageClient.swift ProviderAvailability.swift AIUsage.swift $MOVE_SWIFT $TOMIPPE_ABOUT $TOMIPPE_RELAUNCH $TOMIPPE_FEEDBACK"
+SWIFT_SOURCES="UsageTypes.swift CursorUsageClient.swift CursorModelBreakdown.swift CursorDashboardMenuView.swift MenuBarIconRenderer.swift ProviderAppIcon.swift CodexUsageClient.swift ProviderAvailability.swift AIUsage.swift $MOVE_SWIFT $TOMIPPE_ABOUT $TOMIPPE_RELAUNCH $TOMIPPE_FEEDBACK"
 for src in $SWIFT_SOURCES; do
     if [ ! -f "$src" ]; then
         echo "❌ $src がありません。"

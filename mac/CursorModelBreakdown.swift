@@ -57,14 +57,40 @@ enum CursorModelBreakdown {
         resetAt: Date?,
         now: Date = Date()
     ) -> [(day: Date, totalTokens: Int)] {
-        let cutoff = durationCutoff(duration, resetAt: resetAt, now: now)
-        var buckets: [Date: Int] = [:]
-        let cal = Calendar.current
-        for event in events where event.timestamp >= cutoff {
-            let date = Date(timeIntervalSince1970: event.timestamp / 1000)
-            let day = cal.startOfDay(for: date)
-            buckets[day, default: 0] += event.totalTokens
+        let stacked = dailyStackedTokenSeries(events: events, duration: duration, resetAt: resetAt, now: now)
+        return stacked.days.map { day in
+            let total = stacked.series.reduce(0) { $0 + ($1.tokensByDay[day] ?? 0) }
+            return (day, total)
         }
-        return buckets.keys.sorted().map { ($0, buckets[$0] ?? 0) }
+    }
+
+    /// 正本 dashboard.js の積み上げ棒用（モデル別・日別トークン）
+    static func dailyStackedTokenSeries(
+        events: [CursorUsageEvent],
+        duration: UsageDuration,
+        resetAt: Date?,
+        now: Date = Date()
+    ) -> (days: [Date], series: [(model: String, tokensByDay: [Date: Int])]) {
+        let cutoff = durationCutoff(duration, resetAt: resetAt, now: now)
+        let cal = Calendar.current
+        var daySet = Set<Date>()
+        var byModel: [String: [Date: Int]] = [:]
+
+        for event in events where event.timestamp >= cutoff {
+            let day = cal.startOfDay(for: Date(timeIntervalSince1970: event.timestamp / 1000))
+            daySet.insert(day)
+            var bucket = byModel[event.model] ?? [:]
+            bucket[day, default: 0] += event.totalTokens
+            byModel[event.model] = bucket
+        }
+
+        let days = daySet.sorted()
+        let ranked = byModel.map { (model: $0.key, total: $0.value.values.reduce(0, +)) }
+            .sorted { $0.total > $1.total }
+            .map(\.model)
+        let series = ranked.map { model in
+            (model: model, tokensByDay: byModel[model] ?? [:])
+        }
+        return (days, series)
     }
 }

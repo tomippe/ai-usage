@@ -132,8 +132,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// メニューバー色はシステム Dark Mode ではなく status item の effectiveAppearance に従う。描画はテンプレートに任せる。
     private func applyMenuBarIcon() {
         guard let button = statusItem?.button else { return }
-        let img = MenuBarIconRenderer.makeTemplateImage()
-        button.image = img
+        if let provider = displayProvider(), let appIcon = ProviderAppIcon.menuBarImage(for: provider) {
+            button.image = appIcon
+            button.image?.isTemplate = false
+        } else {
+            button.image = MenuBarIconRenderer.makeTemplateImage()
+            button.image?.isTemplate = true
+        }
         button.imagePosition = .imageLeading
         button.contentTintColor = nil
         logMenuBarAppearance(context: "applyMenuBarIcon")
@@ -164,6 +169,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             lastActiveProvider = provider
             UserDefaults.standard.set(provider.rawValue, forKey: lastProviderDefaultsKey)
             updateStatusBarTitle()
+            applyMenuBarIcon()
         }
     }
 
@@ -233,10 +239,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 let dashItem = NSMenuItem()
                 dashItem.view = cursorDashboardView
                 sub.addItem(dashItem)
-                sub.addItem(.separator())
-                let summary = NSMenuItem(title: title, action: nil, keyEquivalent: "")
-                summary.isEnabled = false
-                sub.addItem(summary)
                 item.submenu = sub
             } else {
                 item.isEnabled = false
@@ -325,6 +327,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 self.codexSnapshot = codexResult
                 self.rebuildProviderMenuItems()
                 self.updateStatusBarTitle()
+                self.applyMenuBarIcon()
             }
         }
     }
