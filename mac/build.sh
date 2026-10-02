@@ -93,7 +93,7 @@ MOVE_SWIFT="$SCRIPT_DIR/../../build-common/MoveToApplicationsFolder.swift"
 TOMIPPE_ABOUT="$SCRIPT_DIR/../../build-common/TomippeAppAbout.swift"
 TOMIPPE_RELAUNCH="$SCRIPT_DIR/../../build-common/TomippeRelaunch.swift"
 TOMIPPE_FEEDBACK="$SCRIPT_DIR/../../build-common/TomippeFeedbackForm.swift"
-SWIFT_SOURCES="UsageTypes.swift CursorUsageClient.swift CursorModelBreakdown.swift CursorDashboardMenuView.swift CodexUsageClient.swift ProviderAvailability.swift AIUsage.swift $MOVE_SWIFT $TOMIPPE_ABOUT $TOMIPPE_RELAUNCH $TOMIPPE_FEEDBACK"
+SWIFT_SOURCES="UsageTypes.swift CursorUsageClient.swift CursorModelBreakdown.swift CursorDashboardMenuView.swift MenuBarIconRenderer.swift CodexUsageClient.swift ProviderAvailability.swift AIUsage.swift $MOVE_SWIFT $TOMIPPE_ABOUT $TOMIPPE_RELAUNCH $TOMIPPE_FEEDBACK"
 for src in $SWIFT_SOURCES; do
     if [ ! -f "$src" ]; then
         echo "❌ $src がありません。"
@@ -141,15 +141,7 @@ create_app_bundle() {
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>"
     fi
-    if [ -f "icon-menubar.svg" ]; then
-        # テンプレート用: 黒＋アルファのみ（マゼンタ等の色は載せない）
-        # メニューバー標準: 18×18 pt（@2x は 36 px）。塗り＋くり抜きを Gray+alpha で維持
-        magick -background none "icon-menubar.svg" -resize 18x18 -colorspace sRGB -type TrueColorAlpha "$RESOURCES/MenuBarIcon.png"
-        magick -background none "icon-menubar.svg" -resize 36x36 -colorspace sRGB -type TrueColorAlpha "$RESOURCES/MenuBarIcon@2x.png"
-    elif [ -f "icon.svg" ]; then
-        magick -background none "icon.svg" -resize 22x22 "$RESOURCES/MenuBarIcon.png"
-        magick -background none "icon.svg" -resize 44x44 "$RESOURCES/MenuBarIcon@2x.png"
-    fi
+    # メニューバーアイコンは MenuBarIconRenderer.swift でベクター描画（PNG 同梱なし）
     if [ -f "$(mac_apps_about_logo_path)" ]; then
         cp "$(mac_apps_about_logo_path)" "$RESOURCES/"
     elif [ -f "$(mac_apps_logo_path)" ]; then

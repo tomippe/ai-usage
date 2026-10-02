@@ -132,23 +132,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// メニューバー色はシステム Dark Mode ではなく status item の effectiveAppearance に従う。描画はテンプレートに任せる。
     private func applyMenuBarIcon() {
         guard let button = statusItem?.button else { return }
-        guard let img = makeMenuBarTemplateImage() else {
-            NSLog("AI Usage: MenuBarIcon not found in bundle")
-            return
-        }
+        let img = MenuBarIconRenderer.makeTemplateImage()
         button.image = img
         button.imagePosition = .imageLeading
         button.contentTintColor = nil
         logMenuBarAppearance(context: "applyMenuBarIcon")
-    }
-
-    private func makeMenuBarTemplateImage() -> NSImage? {
-        guard let base = NSImage(named: NSImage.Name("MenuBarIcon")) else { return nil }
-        guard let img = base.copy() as? NSImage else { return nil }
-        // 論理サイズ 18×18 pt（@2x 36 px ラスター）。隣のシステムアイコンと同程度
-        img.size = NSSize(width: 18, height: 18)
-        img.isTemplate = true
-        return img
     }
 
     private func logMenuBarAppearance(context: String) {
