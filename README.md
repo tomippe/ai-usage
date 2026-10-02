@@ -27,11 +27,10 @@ VS Code / Cursor 拡張の [cursor-usage](../cursor-usage) は別製品として
 | [docs/handoff-from-cursor-usage.md](docs/handoff-from-cursor-usage.md) | cursor-usage からそのまま使えるコード |
 | [docs/providers.md](docs/providers.md) | Cursor / Codex / Claude の取得経路 |
 | [docs/mac-host.md](docs/mac-host.md) | メニューバー本体（disk-monitor 型）と配布 |
-| [docs/app-page.md](docs/app-page.md) | 紹介ページ（未作成） |
+| [docs/app-page.md](docs/app-page.md) | 紹介ページ（公開済み） |
 
 ## まだやっていないこと
 
-- Git リポジトリ初期化・初回コミット
-- WordPress 紹介ページ / `.env`
+- `git remote` 設定（候補: `https://github.com/tomippe/ai-usage.git`）
 - Cursor・Codex 使用量の Swift 実装・アイコン
 - フル `./build.sh`（公証・FTP・配布）

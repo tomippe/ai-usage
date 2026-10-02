@@ -1,30 +1,63 @@
 # AI Usage 紹介ページ設定
 
-未作成。下準備と初回ビルドのときに作る。
+## 公開ステータス
 
-## 予定
+**公開済み**（`status: publish`）。
+
+## URL
+
+- 紹介ページ: https://apps.tomippe.jp/ai-usage/
+- プライバシーポリシー: https://apps.tomippe.jp/ai-usage/policy/
+
+## WordPress 投稿 ID
+
+| 用途 | ID |
+|------|-----|
+| 紹介ページ（app） | **2534** |
+| プライバシーポリシー（app・子ページ） | **2535** |
+
+## キャッチフレーズ（app-cp）
+
+前面の AI の使い方がひと目で分かる
+Cursor と Codex の消化率をメニューバーに
+
+（HTML は中央寄せ 2 行。WordPress ACF `app-cp` に設定済み。）
+
+## デザイン
 
 | 項目 | 値 |
-|---|---|
-| スラッグ | `ai-usage` |
-| 投稿タイトル | `AI Usage by tomippe` |
-| URL | `https://apps.tomippe.jp/ai-usage/` |
-| platform | `["mac"]` |
-| app-macdesc | `macOS 11+, DMG<br>日本語,English,中文` |
-| 配布 | Sparkle DMG（disk-monitor と同じ） |
-| フィードバック prefill_App | `AI Usage by tomippe` |
+|------|-----|
+| **キー色（app-keycolor）** | `#ff3399` |
+| **KV（app-kvbg）** | メディア ID **2533**（マゼンタ `#660066` → `#ff3399` のグラデ） |
+| **app-kvbgaddcss** | `background-repeat: no-repeat;` / `center` / `cover` / `background-color: rgba(255, 51, 153, 0.28);` / `background-blend-mode: screen;` |
+| **アイコン意匠** | 正本 **`mac/icon.svg`** — 丸角四角、グラデ `#ff3399` → `#660066`、三本のバー（使用量メーター）。cursor-usage の緑は不使用。 |
+| **app-icon** | メディア ID **2532**（SVG から 512px PNG をパイプアップロード） |
 
-キャッチフレーズ案（未確定）:
+## プラットフォーム
 
-前面の AI の使用量をメニューバーに
-Cursor と Codex の消化率を切り替えて表示
+- **platform**: `["mac"]`
+- **app-macdesc**: `macOS 11+, DMG<br>日本語,English,中文`
+- **app-macversion**: `0.1.0`
+- **app-macpkg**: `dmg`
+- **配布**: Sparkle 直接配布（DMG は初回リリース後。本文に開発版である旨を記載）
+
+## フィードバック
+
+- Airtable prefill_App: `AI Usage by tomippe`（初回配布前に `airtable-add-feedback-apps.py` で登録予定）
 
 ## 拡張ページとの関係
 
-`https://apps.tomippe.jp/cursor-usage/` は VS Code / Cursor 拡張のまま残す。KV・アイコン・キー色 `#97cc64` は流用しない。AI Usage 用に別アイコンを用意する。
+https://apps.tomippe.jp/cursor-usage/ は VS Code / Cursor 拡張のまま。KV・アイコン・キー色は別デザイン。
 
-## まだ無いもの
+## メディア再アップロード（アイコン）
 
-- `WP_APP_POST_ID` / `.env`
-- アイコン・スクリーンショット・KV・キー色
-- プライバシーポリシー（直接配布 Mac でも用意するなら disk-monitor に倣う）
+```bash
+source ~/.wp-env && source .env
+magick -background none mac/icon.svg -resize 512x512 png:- | curl -s -u "$WP_USER:$WP_APP_PASSWORD" \
+  -H "Content-Disposition: attachment; filename=ai-usage-icon.png" \
+  -H "Content-Type: image/png" --data-binary @- \
+  "$WP_SITE_URL/wp-json/wp/v2/media"
+# 返却 ID を app-icon に PATCH
+```
+
+Mac `AppIcon.icns` は `./build.sh -app` 実行時に `mac/icon.svg` から自動生成（git 管理外）。

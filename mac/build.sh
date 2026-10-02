@@ -50,19 +50,21 @@ echo "🔨 AI Usage v$VERSION をビルド中..."
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
-# ---------- アイコン生成 (角丸付き) ----------
-if [ -f "icon.avif" ]; then
+# ---------- アイコン生成 ----------
+if [ -f "icon.svg" ] || [ -f "icon.avif" ]; then
     echo "🎨 AppIcon.icns を生成中..."
     ICON_TMP="$BUILD_DIR/icon_tmp"
     ICONSET="$BUILD_DIR/AppIcon.iconset"
     rm -rf "$ICON_TMP" "$ICONSET"
     mkdir -p "$ICON_TMP" "$ICONSET"
 
-    # avif → png
-    ffmpeg -y -i icon.avif "$ICON_TMP/icon_src.png" 2>/dev/null
-
-    # 角丸マスクを適用（squircle 約22.37%）
-    swift - "$ICON_TMP/icon_src.png" "$ICON_TMP/icon_rounded.png" 0.2237 << 'SWIFT_EOF'
+    if [ -f "icon.svg" ]; then
+        # 正本 icon.svg（丸角・グラデは SVG 内。追加マスクしない）
+        magick -background none "icon.svg" -resize 1024x1024 "$ICON_TMP/icon_src.png"
+        cp "$ICON_TMP/icon_src.png" "$ICON_TMP/icon_rounded.png"
+    else
+        ffmpeg -y -i icon.avif "$ICON_TMP/icon_src.png" 2>/dev/null
+        swift - "$ICON_TMP/icon_src.png" "$ICON_TMP/icon_rounded.png" 0.2237 << 'SWIFT_EOF'
 import Cocoa
 let args = CommandLine.arguments
 let (inp, out, frac) = (args[1], args[2], Double(args[3])!)
@@ -74,8 +76,8 @@ img.draw(in: NSRect(origin:.zero,size:sz)); res.unlockFocus()
 let bmp = NSBitmapImageRep(data: res.tiffRepresentation!)!
 try! bmp.representation(using:.png,properties:[:])!.write(to:URL(fileURLWithPath:out))
 SWIFT_EOF
+    fi
 
-    # 各サイズを生成
     for sz in 16 32 128 256 512; do
         sips -z $sz $sz "$ICON_TMP/icon_rounded.png" --out "$ICONSET/icon_${sz}x${sz}.png" > /dev/null
         sz2=$((sz * 2))
