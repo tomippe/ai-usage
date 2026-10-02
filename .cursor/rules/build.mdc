@@ -22,10 +22,9 @@ alwaysApply: true
 
 | コマンド | 内容 |
 |---|---|
-| `./build.sh -app` | コンパイル・バンドル作成・アドホック署名 → 実行中なら終了して `build/` の .app を起動（成功後 `version.txt` パッチ +1。`-noverup` でスキップ） |
+| `./build.sh -app` | コンパイル・バンドル作成・アドホック署名 → 実行中なら終了して `build/` の .app を起動（**成功後 `version.txt` パッチ +1**） |
 | `./build.sh` | 直接配布版（Developer ID・ノータライズ・ステープル）→ 配布・FTP・版上げ・Git コミット |
 | `./build.sh -cm "メッセージ"` | コミットメッセージを指定 |
-| `./build.sh -noverup` | ビルド後の `version.txt` インクリメントをスキップ |
 | `cd mac && ./build.sh -app` | Mac のみ確認（ルートと同じ） |
 
 ## 固有設定
@@ -34,6 +33,7 @@ alwaysApply: true
 
 - **Bundle ID**: `jp.tomippe.ai-usage`
 - **バージョン**: ルート `version.txt`（ビルド時に `Info.plist` に反映）
+- **版上げ（必須）**: `./build.sh -app` でもフル `./build.sh` でも、**成功後に必ず `version_save_next`（パッチ +1）**。**エージェントは `-noverup` を付けない**（ユーザーが「版を上げない」と明示したときだけ）。`-app` では Git コミットはしない（`version.txt` の変更はローカルに残る）
 - **直接配布**: `mac/build/AI Usage.app` → `../apps.tomippe.jp/ai-usage/`
 - **バンドル名**: `AI Usage.app`（実行ファイル名は `AIUsage`）
 - **Sparkle**: `mac/Sparkle.framework` / `mac/Sparkle_bin` は `disk-monitor/mac` への symlink（git 管理外）

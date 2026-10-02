@@ -5,6 +5,7 @@ import Sparkle
 private let aiUsageIntroURL = URL(string: "https://apps.tomippe.jp/ai-usage/")!
 private let appDisplayName = "AI Usage"
 private let pollInterval: TimeInterval = 300
+private let noProvidersGracePeriod: TimeInterval = 60
 private let lastProviderDefaultsKey = "jp.tomippe.ai-usage.lastProvider"
 private extension Notification.Name {
     static let applicationDidChangeEffectiveAppearance = Notification.Name(
@@ -35,12 +36,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var currencyMenuRootItem: NSMenuItem?
     private var isStatusMenuOpen = false
     private var pendingProviderMenuRebuild = false
+    private var providerMenuShowsPlaceholder = false
+    private var launchedAt = Date()
 
     func applicationWillFinishLaunching(_: Notification) {
         MoveToApplicationsFolder.moveIfNecessary()
     }
 
     func applicationDidFinishLaunching(_: Notification) {
+        launchedAt = Date()
         if let saved = UserDefaults.standard.string(forKey: lastProviderDefaultsKey),
            let provider = ProviderKind(rawValue: saved) {
             lastActiveProvider = provider
@@ -125,6 +129,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         DispatchQueue.main.async { [weak self] in
             self?.applyMenuBarIcon()
         }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + noProvidersGracePeriod) { [weak self] in
+            guard let self else { return }
+            self.updateStatusBarTitle()
+            self.scheduleProviderMenuRebuild()
+        }
+    }
+
+    private func mayShowNoProvidersMessage() -> Bool {
+        Date().timeIntervalSince(launchedAt) >= noProvidersGracePeriod
     }
 
     @objc private func handleEffectiveAppearanceChanged() {
@@ -156,7 +170,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         isStatusMenuOpen = false
         if pendingProviderMenuRebuild {
             pendingProviderMenuRebuild = false
-            rebuildProviderMenuItems()
+            DispatchQueue.main.async { [weak self] in
+                self?.rebuildProviderMenuItems()
+            }
         }
     }
 
@@ -204,16 +220,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
+    private func installedProviders() -> [ProviderKind] {
+        ProviderAvailability.installedProviders()
+    }
+
+    /// メニューバー表示の切り替え対象（インストール済み。利用率の有無は問わない）
     private func displayProvider() -> ProviderKind? {
-        if let foregroundProvider { return foregroundProvider }
-        let installed = ProviderAvailability.installedProviders()
+        let installed = installedProviders()
+        guard !installed.isEmpty else { return nil }
+        if let foregroundProvider, installed.contains(foregroundProvider) { return foregroundProvider }
         if installed.contains(lastActiveProvider) { return lastActiveProvider }
         return installed.first
     }
 
     private func updateStatusBarTitle() {
         guard let provider = displayProvider() else {
-            statusItem.button?.title = " " + NSLocalizedString("status.no_providers", comment: "")
+            if mayShowNoProvidersMessage() {
+                statusItem.button?.title = " " + NSLocalizedString("status.no_providers", comment: "")
+            } else {
+                statusItem.button?.title = " …"
+            }
             return
         }
 
@@ -241,7 +267,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 statusItem.button?.title = " …"
             }
         case .claude:
-            if let snap = claudeSnapshot, snap.fiveHourUsedPercent != nil || snap.sevenDayUsedPercent != nil {
+            if let snap = claudeSnapshot, snap.hasMenuUsage {
                 statusItem.button?.title = " " + snap.menuBarTitleText()
             } else {
                 statusItem.button?.title = " " + NSLocalizedString("status.awaiting_claude_code", comment: "")
@@ -251,12 +277,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     /// ポーリング完了時は呼ばない（メニュー表示中に項目を外すと落ちる）。タイトルだけ更新する。
     private func syncProviderMenuItemTitles() {
-        let installed = ProviderAvailability.installedProviders()
-        if Set(installed) != Set(providerMenuItems.keys) {
+        let visible = menuProviders()
+        let needsRebuild = providerMenuShowsPlaceholder
+            || Set(visible) != Set(providerMenuItems.keys)
+        if needsRebuild {
             if isStatusMenuOpen {
                 pendingProviderMenuRebuild = true
             } else {
-                rebuildProviderMenuItems()
+                scheduleProviderMenuRebuild()
             }
             return
         }
@@ -265,7 +293,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
+    private func scheduleProviderMenuRebuild() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self, !self.isStatusMenuOpen else {
+                self?.pendingProviderMenuRebuild = true
+                return
+            }
+            self.rebuildProviderMenuItems()
+        }
+    }
+
     private func rebuildProviderMenuItems() {
+        providerMenuShowsPlaceholder = false
         for item in providerMenuItems.values {
             if item.submenu != nil {
                 item.submenu?.removeAllItems()
@@ -274,17 +313,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         providerMenuItems.removeAll()
 
-        let installed = ProviderAvailability.installedProviders()
-        guard !installed.isEmpty else {
-            let item = NSMenuItem(title: NSLocalizedString("status.no_providers", comment: ""), action: nil, keyEquivalent: "")
-            item.isEnabled = false
-            menuContainer.insertItem(item, at: 0)
-            providerMenuItems[.cursor] = item
+        let visible = menuProviders()
+        guard !visible.isEmpty else {
+            providerMenuItems.removeAll()
+            if installedProviders().isEmpty, mayShowNoProvidersMessage() {
+                let item = NSMenuItem(
+                    title: NSLocalizedString("status.no_providers", comment: ""),
+                    action: nil,
+                    keyEquivalent: ""
+                )
+                item.isEnabled = false
+                menuContainer.insertItem(item, at: 0)
+                providerMenuShowsPlaceholder = true
+            } else {
+                providerMenuShowsPlaceholder = false
+            }
             return
         }
 
         var index = 0
-        for provider in installed {
+        for provider in visible {
             let title = providerMenuLine(provider: provider)
             let item = NSMenuItem(title: title, action: #selector(activateProviderApp(_:)), keyEquivalent: "")
             item.target = self
@@ -300,6 +348,21 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             menuContainer.insertItem(item, at: index)
             providerMenuItems[provider] = item
             index += 1
+        }
+    }
+
+    private func menuProviders() -> [ProviderKind] {
+        ProviderAvailability.installedProviders().filter(providerHasMenuUsage)
+    }
+
+    private func providerHasMenuUsage(_ provider: ProviderKind) -> Bool {
+        switch provider {
+        case .cursor:
+            return cursorSnapshot?.hasMenuUsage == true
+        case .codex:
+            return codexSnapshot?.hasMenuUsage == true
+        case .claude:
+            return claudeSnapshot?.hasMenuUsage == true
         }
     }
 
@@ -364,7 +427,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             }
             return snap.codexMenuItemTitle()
         case .claude:
-            guard let snap = claudeSnapshot else { return "Claude — " + NSLocalizedString("status.awaiting_claude_code", comment: "") }
+            guard let snap = claudeSnapshot, snap.hasMenuUsage else { return "" }
             return snap.menuItemTitle()
         }
     }
@@ -475,7 +538,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 self.lastFetchTime = Date()
                 self.cursorSnapshot = cursorResult
                 self.cursorDashboardBundle = cursorDash
-                if let cursorDash {
+                if let cursorDash, !self.isStatusMenuOpen {
                     self.cursorDashboardView.update(bundle: cursorDash)
                 }
                 self.codexSnapshot = codexResult

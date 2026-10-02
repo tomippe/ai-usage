@@ -75,6 +75,14 @@ struct CursorUsageSnapshot {
     var fetchedAt: Date
     var errorMessage: String?
 
+    /// メニュー一覧に出すとき（数字が取れているときだけ true）
+    var hasMenuUsage: Bool {
+        if errorMessage == "not_logged_in" { return false }
+        if errorMessage != nil, totalPercentUsed == nil, limitRequests == 0 { return false }
+        if totalPercentUsed != nil { return true }
+        return limitRequests > 0
+    }
+
     /// メニューバー／メニュー行の定額合計（残り％）
     var menuBarPercentText: String {
         if let pct = totalPercentUsed {
@@ -140,6 +148,10 @@ struct CodexUsageSnapshot {
     var fetchedAt: Date
     var errorMessage: String?
 
+    var hasMenuUsage: Bool {
+        primaryUsedPercent != nil || weeklyUsedPercent != nil
+    }
+
     /// メニューバー: 5時間 98% / 週間 75%（残り％）
     func menuBarTitleText() -> String {
         var parts: [String] = []
@@ -186,6 +198,10 @@ struct ClaudeUsageSnapshot {
     var sevenDayResetsAt: Date?
     var fetchedAt: Date
 
+    var hasMenuUsage: Bool {
+        fiveHourUsedPercent != nil || sevenDayUsedPercent != nil
+    }
+
     func menuBarTitleText() -> String {
         var parts: [String] = []
         if let used = fiveHourUsedPercent {
@@ -205,7 +221,7 @@ struct ClaudeUsageSnapshot {
         if let used = sevenDayUsedPercent {
             parts.append(String(format: NSLocalizedString("menu.claude_seven_day", comment: ""), formatPercent(remainingPercent(fromUsed: used)), formatCodexResetDay(sevenDayResetsAt)))
         }
-        return parts.isEmpty ? "Claude — " + NSLocalizedString("status.awaiting_claude_code", comment: "") : "Claude - " + parts.joined(separator: " / ")
+        return parts.isEmpty ? "Claude — " : "Claude - " + parts.joined(separator: " / ")
     }
 }
 

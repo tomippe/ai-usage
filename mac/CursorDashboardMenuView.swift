@@ -167,11 +167,10 @@ final class CursorDashboardMenuView: NSView {
     private let tableView = NSTableView()
     private var bundle: CursorDashboardBundle?
     private var duration: UsageDuration = .billingCycle
+    private var layoutContentHeight: CGFloat = 420
 
     override var intrinsicContentSize: NSSize {
-        layoutSubtreeIfNeeded()
-        let h = stack.fittingSize.height + 10
-        return NSSize(width: panelWidth, height: max(h, 400))
+        NSSize(width: panelWidth, height: max(layoutContentHeight, 400))
     }
 
     override func viewDidChangeEffectiveAppearance() {
@@ -284,9 +283,10 @@ final class CursorDashboardMenuView: NSView {
     }
 
     func refreshMenuLayoutSize() {
+        layoutSubtreeIfNeeded()
+        layoutContentHeight = max(stack.fittingSize.height + 10, 400)
         invalidateIntrinsicContentSize()
-        let size = intrinsicContentSize
-        frame = NSRect(x: 0, y: frame.origin.y, width: size.width, height: size.height)
+        setFrameSize(NSSize(width: panelWidth, height: layoutContentHeight))
     }
 
     private func configureSectionHeading(_ label: NSTextField, size: CGFloat, weight: NSFont.Weight = .medium) {
