@@ -65,3 +65,15 @@ magick -background none mac/icon.svg -resize 512x512 png:- | curl -s -u "$WP_USE
 ```
 
 Mac `AppIcon.icns` は `./build.sh -app` 実行時に `mac/icon.svg` から自動生成（git 管理外）。
+
+## メディア再アップロード（KV）
+
+```bash
+source ~/.wp-env && source .env
+curl -s -u "$WP_USER:$WP_APP_PASSWORD" \
+  -H "Content-Disposition: attachment; filename=ai-usage-kv-background.jpg" \
+  -H "Content-Type: image/jpeg" \
+  --data-binary @mac/kv-background.jpg \
+  "$WP_SITE_URL/wp-json/wp/v2/media"
+# 返却 ID を app-kvbg に PATCH（app-kvbgaddcss は上表のとおり）
+```
