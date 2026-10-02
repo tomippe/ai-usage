@@ -23,10 +23,65 @@ private enum CursorDashboardTheme {
     ]
 }
 
-final class CursorDashboardMenuView: NSView {
-    private let panelWidth: CGFloat = 380
+/// カード1枚（NSBox + contentView 制約は NSMenu 内で高さ0に潰れるため使わない）
+private final class SummaryCardView: NSView {
     private let stack = NSStackView()
-    private let cardsGrid = NSGridView()
+
+    init(title: String, value: String, ratio: Double?, footer: String?) {
+        super.init(frame: .zero)
+        translatesAutoresizingMaskIntoConstraints = false
+        wantsLayer = true
+        layer?.backgroundColor = CursorDashboardTheme.cardFill.cgColor
+        layer?.cornerRadius = CursorDashboardTheme.cardCorner
+        layer?.borderWidth = 1
+        layer?.borderColor = CursorDashboardTheme.cardBorder.cgColor
+
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 6
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(stack)
+
+        let t = NSTextField(labelWithString: title)
+        t.font = .systemFont(ofSize: 11, weight: .medium)
+        t.textColor = CursorDashboardTheme.muted
+        let val = NSTextField(labelWithString: value)
+        val.font = .systemFont(ofSize: 22, weight: .semibold)
+        stack.addArrangedSubview(t)
+        stack.addArrangedSubview(val)
+        if let ratio {
+            let bar = DashboardProgressBar(ratio: ratio / 100)
+            bar.translatesAutoresizingMaskIntoConstraints = false
+            bar.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
+            stack.addArrangedSubview(bar)
+        }
+        if let footer, !footer.isEmpty {
+            let foot = NSTextField(wrappingLabelWithString: footer)
+            foot.font = .systemFont(ofSize: 11)
+            foot.textColor = CursorDashboardTheme.muted
+            foot.preferredMaxLayoutWidth = 160
+            stack.addArrangedSubview(foot)
+        }
+
+        NSLayoutConstraint.activate([
+            stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
+            stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
+            stack.topAnchor.constraint(equalTo: topAnchor, constant: 12),
+            stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12),
+            heightAnchor.constraint(greaterThanOrEqualToConstant: 88),
+        ])
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { nil }
+}
+
+final class CursorDashboardMenuView: NSView {
+    private let panelWidth: CGFloat = 392
+    private let stack = NSStackView()
+    private let cardsBlock = NSStackView()
+    private let cardsRow1 = NSStackView()
+    private let cardsRow2 = NSStackView()
     private let durationRow = NSStackView()
     private var durationButtons: [NSButton] = []
     private let chartView = DailyUsageChartView()
@@ -36,11 +91,13 @@ final class CursorDashboardMenuView: NSView {
     private var duration: UsageDuration = .billingCycle
 
     override var intrinsicContentSize: NSSize {
-        NSSize(width: panelWidth, height: 430)
+        layoutSubtreeIfNeeded()
+        let h = stack.fittingSize.height + 10
+        return NSSize(width: panelWidth, height: max(h, 400))
     }
 
     init() {
-        super.init(frame: NSRect(x: 0, y: 0, width: 380, height: 430))
+        super.init(frame: NSRect(x: 0, y: 0, width: 392, height: 420))
         translatesAutoresizingMaskIntoConstraints = false
         setupUI()
     }
@@ -59,20 +116,28 @@ final class CursorDashboardMenuView: NSView {
         title.font = .systemFont(ofSize: 15, weight: .semibold)
         stack.addArrangedSubview(title)
 
-        cardsGrid.rowSpacing = CursorDashboardTheme.gridGap
-        cardsGrid.columnSpacing = CursorDashboardTheme.gridGap
-        cardsGrid.xPlacement = .fill
-        cardsGrid.yPlacement = .fill
-        stack.addArrangedSubview(cardsGrid)
+        cardsBlock.orientation = .vertical
+        cardsBlock.spacing = CursorDashboardTheme.gridGap
+        cardsBlock.alignment = .width
+        for row in [cardsRow1, cardsRow2] {
+            row.orientation = .horizontal
+            row.spacing = CursorDashboardTheme.gridGap
+            row.distribution = .fillEqually
+            row.alignment = .top
+            row.translatesAutoresizingMaskIntoConstraints = false
+            cardsBlock.addArrangedSubview(row)
+        }
+        stack.addArrangedSubview(cardsBlock)
 
         durationRow.orientation = .horizontal
         durationRow.spacing = 4
         durationRow.distribution = .fillEqually
+        durationRow.translatesAutoresizingMaskIntoConstraints = false
         for (idx, dur) in UsageDuration.allCases.enumerated() {
             let btn = NSButton(title: NSLocalizedString(dur.menuLabelKey, comment: ""), target: self, action: #selector(durationTapped(_:)))
             btn.tag = idx
-            btn.setButtonType(.pushOnPushOff)
-            btn.bezelStyle = .recessed
+            btn.setButtonType(.toggle)
+            btn.bezelStyle = .accessoryBarAction
             btn.font = .systemFont(ofSize: 11, weight: .medium)
             btn.controlSize = .small
             durationButtons.append(btn)
@@ -106,11 +171,22 @@ final class CursorDashboardMenuView: NSView {
         stack.addArrangedSubview(tableScroll)
 
         NSLayoutConstraint.activate([
+            widthAnchor.constraint(equalToConstant: panelWidth),
             stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
             stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
             stack.topAnchor.constraint(equalTo: topAnchor, constant: 4),
             stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -6),
+            cardsBlock.widthAnchor.constraint(equalTo: stack.widthAnchor),
+            durationRow.widthAnchor.constraint(equalTo: stack.widthAnchor),
+            chartView.widthAnchor.constraint(equalTo: stack.widthAnchor),
+            tableScroll.widthAnchor.constraint(equalTo: stack.widthAnchor),
         ])
+    }
+
+    func refreshMenuLayoutSize() {
+        invalidateIntrinsicContentSize()
+        let size = intrinsicContentSize
+        frame = NSRect(origin: frame.origin, size: size)
     }
 
     private func makeColumn(_ key: String, _ w: CGFloat) -> NSTableColumn {
@@ -124,32 +200,51 @@ final class CursorDashboardMenuView: NSView {
         self.bundle = bundle
         rebuildCards(snapshot: bundle.snapshot)
         reloadDurationViews()
+        refreshMenuLayoutSize()
     }
 
-    private func clearCardsGrid() {
-        while cardsGrid.numberOfRows > 0 {
-            cardsGrid.removeRow(at: 0)
+    private func clearCardRows() {
+        for row in [cardsRow1, cardsRow2] {
+            for view in row.arrangedSubviews {
+                row.removeArrangedSubview(view)
+                view.removeFromSuperview()
+            }
         }
     }
 
     private func rebuildCards(snapshot: CursorUsageSnapshot) {
-        clearCardsGrid()
+        clearCardRows()
         if let err = snapshot.errorMessage {
-            cardsGrid.addRow(with: [
-                card(titleKey: "status.unavailable", value: NSLocalizedString(err == "not_logged_in" ? "status.not_logged_in" : "status.unavailable", comment: ""), ratio: nil, footer: nil),
-            ])
+            let msg = NSLocalizedString(err == "not_logged_in" ? "status.not_logged_in" : "status.unavailable", comment: "")
+            cardsRow1.addArrangedSubview(SummaryCardView(title: NSLocalizedString("status.unavailable", comment: ""), value: msg, ratio: nil, footer: nil))
             return
         }
 
         let resetFooter = resetFooterText(resetAt: snapshot.resetsAt)
-        cardsGrid.addRow(with: [
-            card(titleKey: "dash.card.total", value: formatPercent(snapshot.totalPercentUsed ?? 0), ratio: snapshot.totalPercentUsed, footer: resetFooter),
-            card(titleKey: "dash.card.auto", value: formatPercent(snapshot.autoPercentUsed ?? 0), ratio: snapshot.autoPercentUsed, footer: nil),
-        ])
-        cardsGrid.addRow(with: [
-            card(titleKey: "dash.card.api", value: formatPercent(snapshot.apiPercentUsed ?? 0), ratio: snapshot.apiPercentUsed, footer: nil),
-            card(titleKey: "dash.card.ondemand", value: onDemandText(snapshot), ratio: onDemandRatio(snapshot), footer: onDemandFooter(snapshot)),
-        ])
+        cardsRow1.addArrangedSubview(SummaryCardView(
+            title: NSLocalizedString("dash.card.total", comment: ""),
+            value: formatPercent(snapshot.totalPercentUsed ?? 0),
+            ratio: snapshot.totalPercentUsed,
+            footer: resetFooter
+        ))
+        cardsRow1.addArrangedSubview(SummaryCardView(
+            title: NSLocalizedString("dash.card.auto", comment: ""),
+            value: formatPercent(snapshot.autoPercentUsed ?? 0),
+            ratio: snapshot.autoPercentUsed,
+            footer: nil
+        ))
+        cardsRow2.addArrangedSubview(SummaryCardView(
+            title: NSLocalizedString("dash.card.api", comment: ""),
+            value: formatPercent(snapshot.apiPercentUsed ?? 0),
+            ratio: snapshot.apiPercentUsed,
+            footer: nil
+        ))
+        cardsRow2.addArrangedSubview(SummaryCardView(
+            title: NSLocalizedString("dash.card.ondemand", comment: ""),
+            value: onDemandText(snapshot),
+            ratio: onDemandRatio(snapshot),
+            footer: onDemandFooter(snapshot)
+        ))
     }
 
     private func resetFooterText(resetAt: Date?) -> String? {
@@ -189,62 +284,6 @@ final class CursorDashboardMenuView: NSView {
     private func onDemandRatio(_ s: CursorUsageSnapshot) -> Double? {
         guard s.onDemand == .limited, let limit = s.onDemandLimitDollars, limit > 0 else { return nil }
         return min(100, s.onDemandSpendDollars / limit * 100)
-    }
-
-    private func card(titleKey: String, value: String, ratio: Double?, footer: String?) -> NSView {
-        let columnWidth = (panelWidth - 24 - CursorDashboardTheme.gridGap) / 2
-        let wrapper = NSView()
-        wrapper.translatesAutoresizingMaskIntoConstraints = false
-        wrapper.widthAnchor.constraint(equalToConstant: columnWidth).isActive = true
-
-        let box = NSBox()
-        box.titlePosition = .noTitle
-        box.boxType = .custom
-        box.cornerRadius = CursorDashboardTheme.cardCorner
-        box.borderWidth = 1
-        box.borderColor = CursorDashboardTheme.cardBorder
-        box.fillColor = CursorDashboardTheme.cardFill
-        box.translatesAutoresizingMaskIntoConstraints = false
-        wrapper.addSubview(box)
-
-        let v = NSStackView()
-        v.orientation = .vertical
-        v.alignment = .leading
-        v.spacing = 6
-        v.translatesAutoresizingMaskIntoConstraints = false
-
-        let t = NSTextField(labelWithString: NSLocalizedString(titleKey, comment: ""))
-        t.font = .systemFont(ofSize: 11, weight: .medium)
-        t.textColor = CursorDashboardTheme.muted
-        let val = NSTextField(labelWithString: value)
-        val.font = .systemFont(ofSize: 22, weight: .semibold)
-        v.addArrangedSubview(t)
-        v.addArrangedSubview(val)
-        if let ratio {
-            v.addArrangedSubview(DashboardProgressBar(ratio: ratio / 100))
-        }
-        if let footer, !footer.isEmpty {
-            let foot = NSTextField(labelWithString: footer)
-            foot.font = .systemFont(ofSize: 11)
-            foot.textColor = CursorDashboardTheme.muted
-            foot.lineBreakMode = .byWordWrapping
-            foot.maximumNumberOfLines = 2
-            foot.preferredMaxLayoutWidth = columnWidth - 28
-            v.addArrangedSubview(foot)
-        }
-
-        box.contentView = v
-        NSLayoutConstraint.activate([
-            box.leadingAnchor.constraint(equalTo: wrapper.leadingAnchor),
-            box.trailingAnchor.constraint(equalTo: wrapper.trailingAnchor),
-            box.topAnchor.constraint(equalTo: wrapper.topAnchor),
-            box.bottomAnchor.constraint(equalTo: wrapper.bottomAnchor),
-            v.leadingAnchor.constraint(equalTo: box.contentView!.leadingAnchor, constant: 14),
-            v.trailingAnchor.constraint(equalTo: box.contentView!.trailingAnchor, constant: -14),
-            v.topAnchor.constraint(equalTo: box.contentView!.topAnchor, constant: 12),
-            v.bottomAnchor.constraint(equalTo: box.contentView!.bottomAnchor, constant: -12),
-        ])
-        return wrapper
     }
 
     @objc private func durationTapped(_ sender: NSButton) {

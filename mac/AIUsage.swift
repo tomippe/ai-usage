@@ -119,13 +119,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 item.title = providerMenuLine(provider: provider)
                 if let bundle = cursorDashboardBundle {
                     cursorDashboardView.update(bundle: bundle)
+                    cursorDashboardView.refreshMenuLayoutSize()
                 }
             } else {
                 item.title = providerMenuLine(provider: provider)
             }
         }
-        if menu == menuContainer, cursorDashboardBundle != nil {
-            cursorDashboardView.update(bundle: cursorDashboardBundle!)
+        if menu == menuContainer, let bundle = cursorDashboardBundle {
+            cursorDashboardView.update(bundle: bundle)
+            cursorDashboardView.refreshMenuLayoutSize()
         }
     }
 
