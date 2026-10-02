@@ -5,8 +5,7 @@
 - **表示名**: AI Usage
 - **スラッグ**: `ai-usage`
 - **パス**: `/Users/tomippe/Cursor/ai-usage`
-- **初回プロバイダ**: Cursor と Codex（ChatGPT.app / `~/.codex`）
-- **後回し**: Claude（公式の常時ポーリング API が無い）
+- **プロバイダ**: Cursor、Codex（ChatGPT.app / `~/.codex`）、Claude Code（statusline）
 
 VS Code / Cursor 拡張の [cursor-usage](../cursor-usage) は別製品として残す。データ層・集計・ダッシュボードの仕様はそこから引き継ぐ。
 

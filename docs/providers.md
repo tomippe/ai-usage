@@ -1,6 +1,6 @@
 # プロバイダ
 
-初回は **Cursor と Codex だけ**。Claude は後回し。
+対応プロバイダは **Cursor、Codex、Claude Code**。
 
 未インストールはメニューバーにも一覧にも出さない。
 

@@ -7,7 +7,6 @@ enum ProviderAvailability {
         "com.tomippe.CursorWrap",
     ]
     private static let codexBundleID = "com.openai.codex"
-    private static let claudeCodeBundleIDs: Set<String> = ["com.anthropic.claudefordesktop"]
 
     static func isCursorBundle(_ bundleID: String?) -> Bool {
         guard let bundleID else { return false }
@@ -21,7 +20,6 @@ enum ProviderAvailability {
     static func provider(forBundleID bundleID: String?) -> ProviderKind? {
         if isCursorBundle(bundleID) { return .cursor }
         if isCodexBundle(bundleID) { return .codex }
-        if let bundleID, claudeCodeBundleIDs.contains(bundleID) { return .claude }
         return nil
     }
 

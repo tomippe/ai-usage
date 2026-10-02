@@ -44,7 +44,7 @@ Terminal で `codex` CLI を動かしているときは前面がターミナル�
 |---|---|
 | Cursor | `/Applications/Cursor.app` がある、または `~/Library/Application Support/Cursor/User/globalStorage/state.vscdb` がある |
 | Codex | `/Applications/ChatGPT.app` がある、または `~/.codex/auth.json` がある |
-| Claude | 初回は対象外。後から足すときも、アプリまたは認証ファイルが無いなら出さない |
+| Claude Code | `~/.claude.json`、`~/.claude/.credentials.json`、またはCLI実行ファイルがある |
 
 アプリはあるが未ログインで数字が取れないときは、一覧には出す（「未ログイン」）。メニューバーはそのプロバイダが前面のときだけ警告表示。
 
@@ -54,7 +54,7 @@ Terminal で `codex` CLI を動かしているときは前面がターミナル�
 
 各行の最低限:
 
-- 名前（Cursor / Codex）
+- 名前（Cursor / Codex / Claude Code）
 - いまの％（またはレガシーリクエスト枠）
 - リセット時刻
 - プラン名（取れるとき）
@@ -89,7 +89,7 @@ Mac 直接配布（Developer ID + Sparkle）。App Store サンドボックス�
 
 ## やらないこと（初回）
 
-- Claude
+- Claude Desktop / Web のプラン使用率取得
 - VS Code 拡張化（既存 cursor-usage が担当）
 - App Store
 - 複数アカウント切り替え

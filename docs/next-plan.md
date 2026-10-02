@@ -34,7 +34,7 @@
 | メニュー一覧 | プロバイダ行・週間/5h（Codex）・リセット・プラン |
 | ポーリング | 5 分、クールダウン中は再取得スキップ（前面切替は表示のみ） |
 
-後回し: Claude、ダッシュボード（WKWebView）、モデル内訳、拡張の minimalMode / オンデマンド併記、Cursor WAL 手動走査（現状は SQLite3 読取）。
+後回し: Claude Code の自動検出改善、ダッシュボード（WKWebView）、モデル内訳、拡張の minimalMode / オンデマンド併記、Cursor WAL 手動走査（現状は SQLite3 読取）。
 
 ## フェーズ 3 — 紹介ページ・ポリシー
 

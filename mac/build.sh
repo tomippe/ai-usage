@@ -217,6 +217,11 @@ if $APP_ONLY; then
     echo ""
     echo "🔏 アドホック署名中..."
     codesign --force --deep --sign - --identifier "$BUNDLE_ID" "$DIRECT_BUNDLE"
+    if ! $NO_VERUP; then
+        echo ""
+        echo "📝 次回用バージョンを更新しています..."
+        version_save_next "$VERSION" "$VERSION_FILE"
+    fi
     echo ""
     echo "✅ AI Usage v$VERSION — アプリバンドル作成完了! (-app モード)"
     mac_relaunch_built_app "$DIRECT_BUNDLE" "$APP_EXE"

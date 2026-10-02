@@ -11,6 +11,8 @@ enum ProviderAppIcon {
             path = ProviderAvailability.cursorAppPath()
         case .codex:
             path = ProviderAvailability.codexAppPath()
+        case .claude:
+            path = nil
         }
         guard let path else { return nil }
         return scaledAppIcon(at: path)
