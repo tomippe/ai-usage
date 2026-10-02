@@ -224,7 +224,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         ProviderAvailability.installedProviders()
     }
 
-    /// メニューバー表示の切り替え対象（インストール済み。利用率の有無は問わない）
+    /// メニューバー表示の切り替え対象（インストール済み。使用率の有無は問わない）
     private func displayProvider() -> ProviderKind? {
         let installed = installedProviders()
         guard !installed.isEmpty else { return nil }
@@ -595,7 +595,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func sendFeedback() {
-        TomippeFeedbackForm.open(appName: "AI Usage by tomippe")
+        TomippeFeedbackForm.open(appName: "AI Usage")
     }
 
     private func sparkleCheckForUpdatesMenuItem() -> NSMenuItem {

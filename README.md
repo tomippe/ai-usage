@@ -1,6 +1,6 @@
 # AI Usage
 
-メニューバーに、前面アプリに応じた AI プラン使用量を出す Mac アプリ。
+メニューバーに、前面アプリに応じた AI プラン使用率を出す Mac アプリ。
 
 - **表示名**: AI Usage
 - **スラッグ**: `ai-usage`
@@ -17,7 +17,7 @@ VS Code / Cursor 拡張の [cursor-usage](../cursor-usage) は別製品として
 |---|---|
 | ビルド | `./build.sh` → `mac/build.sh`（Sparkle 直接配布・disk-monitor 型） |
 | ルール | `.cursor/rules/build.mdc` |
-| ソース | `mac/AIUsage.swift`（メニューバー骨格のみ。使用量は未実装） |
+| ソース | `mac/AIUsage.swift`（メニューバー常駐・Cursor / Codex 等） |
 | 計画 | [docs/next-plan.md](docs/next-plan.md) |
 
 | 文書 | 内容 |
@@ -31,5 +31,5 @@ VS Code / Cursor 拡張の [cursor-usage](../cursor-usage) は別製品として
 ## まだやっていないこと
 
 - `git remote` 設定（候補: `https://github.com/tomippe/ai-usage.git`）
-- Cursor・Codex 使用量の Swift 実装・アイコン
+- Cursor・Codex 使用率の Swift 実装・アイコン
 - フル `./build.sh`（公証・FTP・配布）

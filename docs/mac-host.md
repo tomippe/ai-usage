@@ -109,7 +109,7 @@ disk-monitor 固有の `NSAppleEventsUsageDescription`（ゴミ箱）は **付�
 |---|---|---|
 | ログイン時に開く | `SMAppService.mainApp` | 同じ |
 | 更新 | `SPUStandardUpdaterController` + メニュー | 同じ |
-| フィードバック | `TomippeFeedbackForm.open(appName:)` | `appName: "AI Usage"`。Airtable の App 選択肢はビルド時に `airtable-add-feedback-apps.py "AI Usage by tomippe"` |
+| フィードバック | `TomippeFeedbackForm.open(appName:)` | `appName: "AI Usage"`。Airtable 選択肢は **初公開前に必須**（`airtable-add-feedback-apps.py`） |
 | 紹介ページ | メニューから URL | `https://apps.tomippe.jp/ai-usage/`（ページ作成後） |
 
 ## 配布ゲート（省略禁止）

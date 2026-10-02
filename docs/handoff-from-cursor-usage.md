@@ -194,4 +194,4 @@ disk-monitor は `NSLocalizedString`。同じにする。
 
 cursor-usage の `build.sh` は VSIX / Open VSX 用。**使わない**。ビルドは disk-monitor 型（[mac-host.md](mac-host.md)）。
 
-紹介ページの KV・スクショ・キー色 `#97cc64` は拡張用。AI Usage は別アイコン・別ページ。フィードバックの App 名も `AI Usage by tomippe` で新しく足す（拡張の `Cursor Usage by tomippe` は残す）。
+紹介ページの KV・スクショ・キー色 `#97cc64` は拡張用。AI Usage は別アイコン・別ページ。フィードバックの App 名は `AI Usage`（拡張の `Cursor Usage by tomippe` は残す）。

@@ -18,7 +18,7 @@
 |---|------|------|
 | 1.1 | ~~`git init` + `.gitignore` 確認 + 初回コミット~~ **済** | フル `./build.sh` は Git コミット段階で必要 |
 | 1.2 | `mac/icon.avif` または `AppIcon.icns` | 紹介ページ用アイコンと揃える |
-| 1.3 | Airtable フィードバック | `airtable-add-feedback-apps.py "AI Usage by tomippe"` |
+| 1.3 | Airtable フィードバック | **済**（`AI Usage`） |
 | 1.4 | `./build.sh -app` で日常確認 | フルビルドは紹介ページ・初回配布前でも可 |
 
 ## フェーズ 2 — コア機能（Swift 移植）— **初版済（v0.1.0 ローカル）**

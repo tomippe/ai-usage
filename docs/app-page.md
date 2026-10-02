@@ -19,7 +19,7 @@
 ## キャッチフレーズ（app-cp）
 
 前面の AI の使い方がひと目で分かる
-Cursor と Codex の消化率をメニューバーに
+Cursor と Codex の使用率をメニューバーに
 
 （HTML は中央寄せ 2 行。WordPress ACF `app-cp` に設定済み。）
 
@@ -27,27 +27,29 @@ Cursor と Codex の消化率をメニューバーに
 
 | 項目 | 値 |
 |------|-----|
-| **キー色（app-keycolor）** | `#ff3399` |
+| **キー色（app-keycolor）** | `#333333`（濃いグレー） |
 | **KV（app-kvbg）** | メディア ID **2536**。正本 **`mac/kv-background.jpg`**（ユーザー指定のテック／バーチャート系 KV。**Vecteezy 水印入り**の素材をそのまま使用） |
-| **app-kvbgaddcss** | 暗い KV にマゼンタを載せるため **`screen`** ＋ `background-color: rgba(255, 51, 153, 0.32);`。必須4行＋補助色: |
+| **app-kvbgaddcss** | `background-color: rgba(0, 0, 0, 0.4);` ＋ **`exclusion`**。必須4行: |
 | | `background-repeat: no-repeat;` |
 | | `background-position: center;` |
 | | `background-size: cover;` |
-| | `background-blend-mode: screen;` |
-| **アイコン意匠** | 正本 **`mac/icon.svg`** — 丸角四角、グラデ `#ff3399` → `#660066`、三本のバー（使用量メーター）。cursor-usage の緑は不使用。 |
+| | `background-blend-mode: exclusion;` |
+| **アイコン意匠** | 正本 **`mac/icon.svg`** — 丸角四角、グラデ `#ff3399` → `#660066`、三本のバー（使用率メーター）。cursor-usage の緑は不使用。 |
 | **app-icon** | メディア ID **2532**（SVG から 512px PNG をパイプアップロード） |
+| **app-ss01** | メディア ID **2542**（正本 **`ss/app-ss01.png`** 2090×1310） |
+| **app-ss01width** | **1600**（ACF 上限。画像本体は 2090px をアップロードして縮小表示） |
 
 ## プラットフォーム
 
 - **platform**: `["mac"]`
 - **app-macdesc**: `macOS 11+, DMG<br>日本語,English,中文`
-- **app-macversion**: `0.1.0`
+- **app-macversion**: `1.0.0`
 - **app-macpkg**: `dmg`
-- **配布**: Sparkle 直接配布（DMG は初回リリース後。本文に開発版である旨を記載）
+- **配布**: Sparkle 直接配布（DMG 公開済み: https://apps.tomippe.jp/ai-usage/）
 
 ## フィードバック
 
-- Airtable prefill_App: `AI Usage by tomippe`（初回配布前に `airtable-add-feedback-apps.py` で登録予定）
+- Airtable prefill_App: `AI Usage`（紹介ページ `post_title` と一致。`airtable-add-feedback-apps.py "AI Usage"`）
 
 ## 拡張ページとの関係
 

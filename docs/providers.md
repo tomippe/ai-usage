@@ -56,7 +56,7 @@ Terminal で `codex` CLI を動かしているときは前面がターミナル�
    - 5時間枠（primary）と週間枠（secondary）の `usedPercent` / `resetsAt`、クレジット
    - 起動: `codex -s read-only -a never app-server`（入っているとき）
    - 手順: `initialize` → 応答待ち → `initialized` → `account/rateLimits/read`
-2. `~/.codex/auth.json` のトークンで ChatGPT / Codex の使用量 API（CLI が無いとき）。実装時に現行エンドポイントを再確認
+2. `~/.codex/auth.json` のトークンで ChatGPT / Codex の使用率 API（CLI が無いとき）。実装時に現行エンドポイントを再確認
 3. `/status` の PTY パースは最終手段。初回はやらない
 
 **メニューバー:** 週間％を基本にする（Codex の主制約）。5時間枠は一覧に出す。両方あるときは一覧で並べ、バーは週間（設定で 5h / 低い方、は後から）。
@@ -70,8 +70,8 @@ Claude Code の公式statuslineが stdin JSON として渡す `rate_limits.five_
 - `~/.claude.json`、`~/.claude/.credentials.json`、またはClaude Code実行ファイルがあるとき一覧に出す
 - 初回起動時、既存の `~/.claude/settings.json` に `statusLine` が無い場合だけAI Usageのstatuslineを登録する
 - 既存statuslineが設定済みなら変更しない（その場合Claudeの値はstatusline連携されない）
-- `~/.claude/ai-usage-rate-limits.json` には利用率・リセット時刻・取得時刻だけを保存し、セッションID、会話、作業パスは保存しない
-- Claude Codeを起動した直後でまだ応答が無い場合は利用率が無く、取得待ちを表示する
+- `~/.claude/ai-usage-rate-limits.json` には使用率・リセット時刻・取得時刻だけを保存し、セッションID、会話、作業パスは保存しない
+- Claude Codeを起動した直後でまだ応答が無い場合は使用率が無く、取得待ちを表示する
 
 ## 競合
 

@@ -33,7 +33,7 @@
 "menu.claude_five_hour" = "5時間 残り%1$@(%2$@)";
 "menu.claude_seven_day" = "週間 残り%1$@(%2$@)";
 "menu.resets_at" = "リセット %@";
-"dash.title" = "Cursor使用量";
+"dash.title" = "Cursor使用率";
 "dash.card.total" = "定額分";
 "dash.card.auto" = "純正モデル";
 "dash.card.api" = "API分";
@@ -46,12 +46,12 @@
 "dash.duration.7d" = "直近7日間";
 "dash.duration.30d" = "直近30日間";
 "dash.duration.cycle" = "現在の請求サイクル";
-"dash.models" = "モデル別使用量";
+"dash.models" = "モデル別使用率";
 "dash.col.model" = "モデル";
 "dash.col.requests" = "リクエスト";
 "dash.col.tokens" = "トークン";
 "dash.col.spend" = "支出";
-"dash.chart.empty" = "この期間の使用量はありません";
+"dash.chart.empty" = "この期間の使用率はありません";
 "menu.refresh" = "今すぐ更新";
 "menu.currency" = "金額レート";
 "menu.currency.usd" = "ドル";

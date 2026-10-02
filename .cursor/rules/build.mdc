@@ -38,7 +38,13 @@ alwaysApply: true
 - **バンドル名**: `AI Usage.app`（実行ファイル名は `AIUsage`）
 - **Sparkle**: `mac/Sparkle.framework` / `mac/Sparkle_bin` は `disk-monitor/mac` への symlink（git 管理外）
 - **ローカライズ**: `mac/Resources/{en,ja,zh-Hans}.lproj`
-- **フィードバック**: `TomippeFeedbackForm.open(appName: "AI Usage")`。Airtable App 選択肢は初回配布前に `airtable-add-feedback-apps.py "AI Usage by tomippe"`
+- **フィードバック**: `TomippeFeedbackForm.open(appName: "AI Usage")`（`prefill_App` と Airtable 選択肢名は **完全一致**）
+- **初公開（初回フルビルド）前に必須**: Airtable App 単一選択に上記名を追加する。
+  ```bash
+  python3 /Users/tomippe/Cursor/build-common/scripts/airtable-add-feedback-apps.py "AI Usage"
+  python3 /Users/tomippe/Cursor/build-common/scripts/airtable-add-feedback-apps.py --list | grep -F "AI Usage"
+  ```
+  未登録のまま公開しない（フォームの App プリフィルが空になる）。
 
 ## Git — フルビルド後の main 統合
 
