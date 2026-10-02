@@ -3,7 +3,10 @@ import Cocoa
 /// メニューバー用テンプレートアイコン。正本意匠は `icon-menubar.svg` / `icon.svg`（512）。
 /// PNG は使わず even-odd で塗り角丸四角から三本バーをくり抜く。
 enum MenuBarIconRenderer {
-    static let logicalSide: CGFloat = 18
+    static let logicalSide: CGFloat = 20
+    private static let cardInset: CGFloat = 2
+    private static let cardSide: CGFloat = 16
+    private static let cardRadius: CGFloat = 2.5
 
     static func makeTemplateImage() -> NSImage {
         let size = NSSize(width: logicalSide, height: logicalSide)
@@ -25,15 +28,15 @@ enum MenuBarIconRenderer {
         let path = NSBezierPath()
         path.windingRule = .evenOdd
 
-        let card = topRect(x: 2.5, y: 2.5, width: 13, height: 13, canvas: logicalSide)
+        let card = topRect(x: cardInset, y: cardInset, width: cardSide, height: cardSide, canvas: logicalSide)
             .scaled(by: scale, in: rect)
-        path.append(NSBezierPath(roundedRect: card, xRadius: 2 * scale, yRadius: 2 * scale))
+        path.append(NSBezierPath(roundedRect: card, xRadius: cardRadius * scale, yRadius: cardRadius * scale))
 
-        // バー位置は icon.svg 比。幅は 18pt でも目視できるよう 1.5pt 前後（ベクターなので Retina でも穴が潰れない）
+        // 18pt / 13 字形から 20pt / 16 へ等比スケール（icon.svg 比・穴幅は維持）
         let bars: [(x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat)] = [
-            (5.45, 6.8, 1.55, 5.1),
-            (8.15, 8.35, 1.85, 3.75),
-            (10.85, 5.25, 1.55, 6.75),
+            (5.63, 7.29, 1.91, 6.28),
+            (8.95, 9.2, 2.28, 4.62),
+            (12.27, 5.38, 1.91, 8.31),
         ]
         for bar in bars {
             let r = topRect(x: bar.x, y: bar.y, width: bar.w, height: bar.h, canvas: logicalSide)
