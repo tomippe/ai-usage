@@ -197,9 +197,11 @@ struct ClaudeUsageSnapshot {
     var fiveHourResetsAt: Date?
     var sevenDayResetsAt: Date?
     var fetchedAt: Date
+    var errorMessage: String?
 
     var hasMenuUsage: Bool {
-        fiveHourUsedPercent != nil || sevenDayUsedPercent != nil
+        if errorMessage == "not_logged_in" || errorMessage == "no_credentials" { return false }
+        return fiveHourUsedPercent != nil || sevenDayUsedPercent != nil
     }
 
     func menuBarTitleText() -> String {

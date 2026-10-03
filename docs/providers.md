@@ -65,7 +65,9 @@ Terminal で `codex` CLI を動かしているときは前面がターミナル�
 
 ## Claude Code
 
-Claude Code の公式statuslineが stdin JSON として渡す `rate_limits.five_hour` / `rate_limits.seven_day` を使用する。Claude Codeが動いて応答を受けたときに値が更新される。バックグラウンドで認証トークンや非公式APIをポーリングしない。
+取得手段の整理（① OAuth / ② statusline / ③ Web Cookie）は **[claude-usage-fetch.md](claude-usage-fetch.md)** を正本とする。
+
+**実装:** **①** キーチェーン（`Claude Code-credentials`）または `~/.claude/.credentials.json` から OAuth を読み、期限切れなら refresh して `GET /api/oauth/usage` を **メイン更新（約300秒）** でポーリング。**②** statusline は `--claude-statusline` で `~/.claude/ai-usage-rate-limits.json` に書き、**15秒** ごとに ① とマージ。User-Agent は `claude-code/<アプリ版>`。429 時は前回値を維持。
 
 - `~/.claude.json`、`~/.claude/.credentials.json`、またはClaude Code実行ファイルがあるとき一覧に出す
 - 初回起動時、既存の `~/.claude/settings.json` に `statusLine` が無い場合だけAI Usageのstatuslineを登録する

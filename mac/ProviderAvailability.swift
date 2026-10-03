@@ -38,6 +38,7 @@ enum ProviderAvailability {
         let home = NSHomeDirectory()
         return FileManager.default.fileExists(atPath: home + "/.claude.json")
             || FileManager.default.fileExists(atPath: home + "/.claude/.credentials.json")
+            || ClaudeUsageClient.hasOAuthCredentials()
             || FileManager.default.fileExists(atPath: home + "/.local/bin/claude")
             || FileManager.default.fileExists(atPath: "/opt/homebrew/bin/claude")
             || FileManager.default.fileExists(atPath: "/usr/local/bin/claude")

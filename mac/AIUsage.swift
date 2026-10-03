@@ -58,7 +58,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if let executablePath = Bundle.main.executablePath {
             ClaudeUsageClient.installStatusLineIfAvailable(executablePath: executablePath)
         }
-        claudeSnapshot = ClaudeUsageClient.readSnapshot()
+        claudeSnapshot = ClaudeUsageClient.mergeSources(
+            oauth: nil,
+            statusline: ClaudeUsageClient.readSnapshot(),
+            retaining: nil
+        )
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleEffectiveAppearanceChanged),
@@ -118,12 +122,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         claudeSnapshotTimer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
             guard let self else { return }
-            let snapshot = ClaudeUsageClient.readSnapshot()
-            if snapshot?.fetchedAt != self.claudeSnapshot?.fetchedAt {
-                self.claudeSnapshot = snapshot
-                self.updateStatusBarTitle()
-                self.syncProviderMenuItemTitles()
-            }
+            self.applyClaudeSnapshot(oauth: nil)
         }
 
         DispatchQueue.main.async { [weak self] in
@@ -511,6 +510,25 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         refreshUsage(force: true)
     }
 
+    private func applyClaudeSnapshot(oauth: ClaudeUsageSnapshot?) {
+        let merged = ClaudeUsageClient.mergeSources(
+            oauth: oauth,
+            statusline: ClaudeUsageClient.readSnapshot(),
+            retaining: claudeSnapshot
+        )
+        let changed = merged?.fetchedAt != claudeSnapshot?.fetchedAt
+            || merged?.fiveHourUsedPercent != claudeSnapshot?.fiveHourUsedPercent
+            || merged?.sevenDayUsedPercent != claudeSnapshot?.sevenDayUsedPercent
+            || merged?.errorMessage != claudeSnapshot?.errorMessage
+        guard changed else { return }
+        claudeSnapshot = merged
+        updateStatusBarTitle()
+        syncProviderMenuItemTitles()
+        if oauth != nil, !isStatusMenuOpen {
+            scheduleProviderMenuRebuild()
+        }
+    }
+
     private func refreshUsage(force: Bool) {
         if isFetching { return }
         if !force, let lastFetchTime, Date().timeIntervalSince(lastFetchTime) < pollInterval {
@@ -533,6 +551,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             if ProviderAvailability.isCodexInstalled() {
                 codexResult = CodexUsageClient.fetchUsage()
             }
+            var claudeOAuth: ClaudeUsageSnapshot?
+            if ProviderAvailability.isClaudeCodeInstalled() {
+                claudeOAuth = ClaudeUsageClient.fetchOAuthUsage()
+            }
             DispatchQueue.main.async {
                 self.isFetching = false
                 self.lastFetchTime = Date()
@@ -542,6 +564,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     self.cursorDashboardView.update(bundle: cursorDash)
                 }
                 self.codexSnapshot = codexResult
+                self.applyClaudeSnapshot(oauth: claudeOAuth)
                 self.syncProviderMenuItemTitles()
                 self.updateStatusBarTitle()
                 self.applyMenuBarIcon()
