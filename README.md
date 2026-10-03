@@ -28,8 +28,12 @@ VS Code / Cursor 拡張の [cursor-usage](../cursor-usage) は別製品として
 | [docs/mac-host.md](docs/mac-host.md) | メニューバー本体（disk-monitor 型）と配布 |
 | [docs/app-page.md](docs/app-page.md) | 紹介ページ（公開済み） |
 
+## リポジトリ
+
+- **GitHub:** https://github.com/tomippe/ai-usage （公開）
+- **ライセンス:** [MIT](LICENSE) — 改変・再配布自由
+- **寄付:** 改善は [本リポジトリへの PR](CONTRIBUTING.md) を歓迎（義務ではなく推奨）。配布ビルドの名称は [TRADEMARK.md](TRADEMARK.md) を参照
+
 ## まだやっていないこと
 
-- `git remote` 設定（候補: `https://github.com/tomippe/ai-usage.git`）
-- Cursor・Codex 使用率の Swift 実装・アイコン
-- フル `./build.sh`（公証・FTP・配布）
+- フル `./build.sh` を CI 化する等（ローカルビルドは `build.mdc` 参照）
