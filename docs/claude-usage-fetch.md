@@ -12,8 +12,9 @@ Claude Codeにログインしたときの認証トークンを使って、非公
 
 ### トークンの取得
 
-- 保存場所：macOSのキーチェーン、サービス名 `Claude Code-credentials`
-- 次のコマンドでJSONが取れるので、中の `accessToken` を使います。
+- 保存場所：macOSのキーチェーン（`Claude Code-credentials`）または `~/.claude/.credentials.json`
+- **AI Usage:** キーチェーンは **UI を出さない読取のみ**（拒否・未許可時は以後キーチェーンに触れず、ファイルと statusline のみ）。トークン更新の保存先は **ファイルのみ**（Claude Code のキーチェーンは更新しない）。
+- 次のコマンドでJSONが取れるので、中の `accessToken` を使います（ターミナル／Claude Code 用。AI Usage はパスワードダイアログを出さない）。
 
 ```bash
 security find-generic-password -s "Claude Code-credentials" -w

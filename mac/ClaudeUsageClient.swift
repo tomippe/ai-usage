@@ -10,6 +10,8 @@ enum ClaudeUsageClient {
     private static let fetchTimeout: TimeInterval = 15
     private static let refreshLeadTime: TimeInterval = 120
     private static let refreshQueue = DispatchQueue(label: "jp.tomippe.ai-usage.claude-oauth-refresh")
+    /// User denied keychain or silent read failed — do not call SecItem* again (avoids repeated password dialogs).
+    private static let keychainSkipDefaultsKey = "claudeOAuthKeychainSkipped"
     private static var claudeDirectory: URL {
         FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".claude", isDirectory: true)
     }
@@ -97,7 +99,9 @@ enum ClaudeUsageClient {
     }
 
     static func hasOAuthCredentials() -> Bool {
-        loadCredentialsRoot() != nil
+        if credentialsFileExists() { return true }
+        if UserDefaults.standard.bool(forKey: keychainSkipDefaultsKey) { return false }
+        return keychainItemExistsWithoutUI()
     }
 
     /// Polls the OAuth usage endpoint (Claude Code login). Statusline JSON is merged separately.
@@ -223,29 +227,71 @@ enum ClaudeUsageClient {
         var keychainAccount: String?
     }
 
+    private static func credentialsFileURL() -> URL {
+        claudeDirectory.appendingPathComponent(credentialsFileName)
+    }
+
+    private static func credentialsFileExists() -> Bool {
+        FileManager.default.fileExists(atPath: credentialsFileURL().path)
+    }
+
     private static func loadCredentialsRoot() -> [String: Any]? {
-        if let fromKeychain = loadCredentialsFromKeychain() {
-            return fromKeychain.root
-        }
-        let fileURL = claudeDirectory.appendingPathComponent(credentialsFileName)
-        guard let data = try? Data(contentsOf: fileURL),
-              let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+        if let fromFile = loadCredentialsFromFile() { return fromFile }
+        if UserDefaults.standard.bool(forKey: keychainSkipDefaultsKey) { return nil }
+        return loadCredentialsFromKeychain()?.root
+    }
+
+    private static func loadCredentialsFromFile() -> [String: Any]? {
+        guard let data = try? Data(contentsOf: credentialsFileURL()),
+              let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              oauthDict(from: root) != nil else { return nil }
         return root
+    }
+
+    /// Never show the login keychain password sheet (`kSecUseAuthenticationUIFail`).
+    private static func keychainQuery(service: String, returnData: Bool) -> [String: Any] {
+        var query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecMatchLimit as String: kSecMatchLimitOne,
+            kSecUseAuthenticationUI as String: kSecUseAuthenticationUIFail,
+        ]
+        query[kSecReturnAttributes as String] = true
+        if returnData {
+            query[kSecReturnData as String] = true
+        }
+        return query
+    }
+
+    private static func shouldSkipKeychainAfterError(_ status: OSStatus) -> Bool {
+        status == errSecInteractionNotAllowed || status == errSecAuthFailed
+    }
+
+    private static func markKeychainSkippedIfNeeded(_ status: OSStatus) {
+        if shouldSkipKeychainAfterError(status) {
+            UserDefaults.standard.set(true, forKey: keychainSkipDefaultsKey)
+        }
+    }
+
+    private static func keychainItemExistsWithoutUI() -> Bool {
+        for service in keychainServices {
+            var item: CFTypeRef?
+            let status = SecItemCopyMatching(keychainQuery(service: service, returnData: false) as CFDictionary, &item)
+            if status == errSecSuccess { return true }
+            markKeychainSkippedIfNeeded(status)
+        }
+        return false
     }
 
     private static func loadCredentialsFromKeychain() -> StoredOAuth? {
         for service in keychainServices {
-            let query: [String: Any] = [
-                kSecClass as String: kSecClassGenericPassword,
-                kSecAttrService as String: service,
-                kSecReturnData as String: true,
-                kSecReturnAttributes as String: true,
-                kSecMatchLimit as String: kSecMatchLimitOne,
-            ]
             var item: CFTypeRef?
-            let status = SecItemCopyMatching(query as CFDictionary, &item)
-            guard status == errSecSuccess,
-                  let dict = item as? [String: Any],
+            let status = SecItemCopyMatching(keychainQuery(service: service, returnData: true) as CFDictionary, &item)
+            if status != errSecSuccess {
+                markKeychainSkippedIfNeeded(status)
+                continue
+            }
+            guard let dict = item as? [String: Any],
                   let data = dict[kSecValueData as String] as? Data,
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let oauth = oauthDict(from: json),
@@ -333,36 +379,12 @@ enum ClaudeUsageClient {
         return .success(StoredOAuth(root: updatedRoot, oauth: oauth, accessToken: access, keychainService: nil, keychainAccount: nil))
     }
 
+    /// Writes Claude OAuth JSON to disk only (never updates Claude Code's keychain — avoids extra prompts).
     private static func persistCredentialsRoot(_ root: [String: Any]) {
-        guard let data = try? JSONSerialization.data(withJSONObject: root, options: [.sortedKeys]) else { return }
-        let fileURL = claudeDirectory.appendingPathComponent(credentialsFileName)
+        guard oauthDict(from: root) != nil,
+              let data = try? JSONSerialization.data(withJSONObject: root, options: [.sortedKeys]) else { return }
         try? FileManager.default.createDirectory(at: claudeDirectory, withIntermediateDirectories: true)
-        try? data.write(to: fileURL, options: .atomic)
-
-        guard let oauth = oauthDict(from: root) else { return }
-        for service in keychainServices {
-            let query: [String: Any] = [
-                kSecClass as String: kSecClassGenericPassword,
-                kSecAttrService as String: service,
-                kSecReturnAttributes as String: true,
-                kSecMatchLimit as String: kSecMatchLimitOne,
-            ]
-            var item: CFTypeRef?
-            guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
-                  let dict = item as? [String: Any],
-                  let account = dict[kSecAttrAccount as String] as? String else { continue }
-            var updateRoot = root
-            updateRoot["claudeAiOauth"] = oauth
-            guard let keychainData = try? JSONSerialization.data(withJSONObject: updateRoot, options: [.sortedKeys]) else { continue }
-            let update: [String: Any] = [kSecValueData as String: keychainData]
-            let updateQuery: [String: Any] = [
-                kSecClass as String: kSecClassGenericPassword,
-                kSecAttrService as String: service,
-                kSecAttrAccount as String: account,
-            ]
-            SecItemUpdate(updateQuery as CFDictionary, update as CFDictionary)
-            break
-        }
+        try? data.write(to: credentialsFileURL(), options: .atomic)
     }
 
     private enum OAuthFetchFailure: Error {
