@@ -47,6 +47,12 @@ Cursor と Codex の使用率をメニューバーに
 - **app-macpkg**: `dmg`
 - **配布**: Sparkle 直接配布（DMG 公開済み: https://apps.tomippe.jp/ai-usage/）
 
+## バージョン履歴（app-versions）
+
+- **版列は a.b.c**（例: `v1.0.6`）。**配布したパッチごとに1行**（未配布の版番号は行を作らない）
+- 正本 HTML: [docs/app-versions.html](app-versions.html) → WP `app-versions` に反映 → フルビルドまたは `sparkle-release-notes-from-wp.py --version "<今回>"` で HTML / appcast / FTP
+- 同じ a.b.c の行があるときは追記・統合（新行を増やさない）
+
 ## フィードバック
 
 - Airtable prefill_App: `AI Usage`（紹介ページ `post_title` と一致。`airtable-add-feedback-apps.py "AI Usage"`）

@@ -16,6 +16,7 @@ alwaysApply: true
 - **ビルド**: `./build.sh`（`mac/build.sh` に委譲。Sparkle 直接配布パイプライン）
 - **デプロイ（Mac）**: `../apps.tomippe.jp/ai-usage/`（DMG・manifest.json を FTP 同期）
 - **紹介ページ**: WordPress（`docs/app-page.md`、ローカル `.env` は `.env.example` を参照）
+- **app-versions**: 版列は **a.b.c**（`docs/app-versions.html` が正本）。フルビルド前に該当行を更新すること
 - **Windows / MAS**: 初回対象外
 
 ## ビルドコマンド（Mac）
