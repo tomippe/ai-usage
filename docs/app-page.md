@@ -43,7 +43,7 @@ Cursor と Codex の使用率をメニューバーに
 
 - **platform**: `["mac"]`
 - **app-macdesc**: `macOS 11+, DMG<br>日本語,English,中文`
-- **app-macversion**: `1.0.3`
+- **app-macversion**: `1.0.4`
 - **app-macpkg**: `dmg`
 - **配布**: Sparkle 直接配布（DMG 公開済み: https://apps.tomippe.jp/ai-usage/）
 
