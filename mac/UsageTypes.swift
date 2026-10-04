@@ -200,8 +200,13 @@ struct ClaudeUsageSnapshot {
     var errorMessage: String?
 
     var hasMenuUsage: Bool {
+        if errorMessage == "credential_access_required" { return true }
         if errorMessage == "not_logged_in" || errorMessage == "no_credentials" { return false }
         return fiveHourUsedPercent != nil || sevenDayUsedPercent != nil
+    }
+
+    var needsCredentialAccessPrompt: Bool {
+        errorMessage == "credential_access_required"
     }
 
     func menuBarTitleText() -> String {
@@ -224,6 +229,13 @@ struct ClaudeUsageSnapshot {
             parts.append(String(format: NSLocalizedString("menu.claude_seven_day", comment: ""), formatPercent(remainingPercent(fromUsed: used)), formatCodexResetDay(sevenDayResetsAt)))
         }
         return parts.isEmpty ? "Claude — " : "Claude - " + parts.joined(separator: " / ")
+    }
+
+    func claudeMenuItemTitle() -> String {
+        if needsCredentialAccessPrompt {
+            return NSLocalizedString("menu.claude_credential_access", comment: "")
+        }
+        return menuItemTitle()
     }
 }
 

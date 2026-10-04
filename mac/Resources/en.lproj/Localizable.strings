@@ -28,6 +28,8 @@
 "menu.codex_weekly_remaining" = "Weekly %1$@(%2$@)";
 "menu.codex_reset_credits" = "%d reset available";
 "status.awaiting_claude_code" = "Open Claude Code to load usage";
+"status.claude_credential_access" = "Claude — permission needed";
+"menu.claude_credential_access" = "Claude — Allow access to show usage (tap)";
 "menu.claude_five_hour_short" = "5h %@";
 "menu.claude_seven_day_short" = "Weekly %@";
 "menu.claude_five_hour" = "5h remaining %1$@(%2$@)";

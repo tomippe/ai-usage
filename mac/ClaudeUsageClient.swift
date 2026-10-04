@@ -99,18 +99,39 @@ enum ClaudeUsageClient {
     }
 
     static func hasOAuthCredentials() -> Bool {
-        if credentialsFileExists() { return true }
-        if UserDefaults.standard.bool(forKey: keychainSkipDefaultsKey) { return false }
-        return keychainItemExistsWithoutUI()
+        credentialsFileExists() || keychainItemExistsSilently()
+    }
+
+    /// Claude Code credentials are in the keychain but not yet readable without user action.
+    static func needsCredentialAccessPrompt() -> Bool {
+        !credentialsFileExists() && keychainItemExistsSilently()
+    }
+
+    /// Menu tap: show the system access dialog, copy credentials to file on success, then fetch usage.
+    static func requestCredentialAccessAndFetchUsage() -> ClaudeUsageSnapshot {
+        let now = Date()
+        UserDefaults.standard.removeObject(forKey: keychainSkipDefaultsKey)
+        guard let stored = loadCredentialsFromKeychain(allowUI: true) else {
+            return oauthUnavailable(now, "credential_access_required")
+        }
+        persistCredentialsRoot(stored.root)
+        return fetchOAuthUsage(fromRoot: stored.root, fetchedAt: now)
     }
 
     /// Polls the OAuth usage endpoint (Claude Code login). Statusline JSON is merged separately.
     static func fetchOAuthUsage() -> ClaudeUsageSnapshot {
         let now = Date()
-        guard hasOAuthCredentials() else {
+        guard let root = loadCredentialsRoot() else {
+            if needsCredentialAccessPrompt() {
+                return oauthUnavailable(now, "credential_access_required")
+            }
             return oauthUnavailable(now, "no_credentials")
         }
-        guard var root = loadCredentialsRoot(), var oauth = oauthDict(from: root) else {
+        return fetchOAuthUsage(fromRoot: root, fetchedAt: now)
+    }
+
+    private static func fetchOAuthUsage(fromRoot root: [String: Any], fetchedAt now: Date) -> ClaudeUsageSnapshot {
+        guard var oauth = oauthDict(from: root) else {
             return oauthUnavailable(now, "no_credentials")
         }
         guard let refreshToken = oauth["refreshToken"] as? String, !refreshToken.isEmpty else {
@@ -125,6 +146,7 @@ enum ClaudeUsageClient {
             return oauthUnavailable(now, "not_logged_in")
         }
 
+        var root = root
         if shouldRefreshAccessToken(oauth: oauth, now: now), ProcessInfo.processInfo.environment["CLAUDE_CODE_OAUTH_TOKEN"] == nil {
             switch refreshAccessToken(refreshToken: refreshToken, root: root) {
             case .success(let updated):
@@ -167,12 +189,25 @@ enum ClaudeUsageClient {
         let oauthSide = oauth ?? previous.map(stripError)
         let combined = combineSnapshots(oauthSide, statusline)
         if let combined, combined.hasMenuUsage {
+            if combined.fiveHourUsedPercent != nil || combined.sevenDayUsedPercent != nil {
+                return ClaudeUsageSnapshot(
+                    fiveHourUsedPercent: combined.fiveHourUsedPercent,
+                    sevenDayUsedPercent: combined.sevenDayUsedPercent,
+                    fiveHourResetsAt: combined.fiveHourResetsAt,
+                    sevenDayResetsAt: combined.sevenDayResetsAt,
+                    fetchedAt: combined.fetchedAt,
+                    errorMessage: nil
+                )
+            }
             return combined
         }
         if let prev = previous, prev.hasMenuUsage,
            let err = oauth?.errorMessage,
            ["rate_limited", "refresh_rate_limited", "network"].contains(err) {
             return combineSnapshots(prev, statusline) ?? prev
+        }
+        if oauth?.errorMessage == "credential_access_required" {
+            return oauth
         }
         return combined ?? previous
     }
@@ -238,7 +273,7 @@ enum ClaudeUsageClient {
     private static func loadCredentialsRoot() -> [String: Any]? {
         if let fromFile = loadCredentialsFromFile() { return fromFile }
         if UserDefaults.standard.bool(forKey: keychainSkipDefaultsKey) { return nil }
-        return loadCredentialsFromKeychain()?.root
+        return loadCredentialsFromKeychain(allowUI: false)?.root
     }
 
     private static func loadCredentialsFromFile() -> [String: Any]? {
@@ -248,13 +283,12 @@ enum ClaudeUsageClient {
         return root
     }
 
-    /// Never show the login keychain password sheet (`kSecUseAuthenticationUIFail`).
-    private static func keychainQuery(service: String, returnData: Bool) -> [String: Any] {
+    private static func keychainQuery(service: String, returnData: Bool, allowUI: Bool) -> [String: Any] {
         var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecMatchLimit as String: kSecMatchLimitOne,
-            kSecUseAuthenticationUI as String: kSecUseAuthenticationUIFail,
+            kSecUseAuthenticationUI as String: allowUI ? kSecUseAuthenticationUIAllow : kSecUseAuthenticationUIFail,
         ]
         query[kSecReturnAttributes as String] = true
         if returnData {
@@ -273,22 +307,23 @@ enum ClaudeUsageClient {
         }
     }
 
-    private static func keychainItemExistsWithoutUI() -> Bool {
+    private static func keychainItemExistsSilently() -> Bool {
         for service in keychainServices {
             var item: CFTypeRef?
-            let status = SecItemCopyMatching(keychainQuery(service: service, returnData: false) as CFDictionary, &item)
+            let status = SecItemCopyMatching(keychainQuery(service: service, returnData: false, allowUI: false) as CFDictionary, &item)
             if status == errSecSuccess { return true }
-            markKeychainSkippedIfNeeded(status)
         }
         return false
     }
 
-    private static func loadCredentialsFromKeychain() -> StoredOAuth? {
+    private static func loadCredentialsFromKeychain(allowUI: Bool) -> StoredOAuth? {
         for service in keychainServices {
             var item: CFTypeRef?
-            let status = SecItemCopyMatching(keychainQuery(service: service, returnData: true) as CFDictionary, &item)
+            let status = SecItemCopyMatching(keychainQuery(service: service, returnData: true, allowUI: allowUI) as CFDictionary, &item)
             if status != errSecSuccess {
-                markKeychainSkippedIfNeeded(status)
+                if !allowUI {
+                    markKeychainSkippedIfNeeded(status)
+                }
                 continue
             }
             guard let dict = item as? [String: Any],

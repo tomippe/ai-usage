@@ -266,7 +266,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 statusItem.button?.title = " …"
             }
         case .claude:
-            if let snap = claudeSnapshot, snap.hasMenuUsage {
+            if let snap = claudeSnapshot, snap.needsCredentialAccessPrompt {
+                statusItem.button?.title = " " + NSLocalizedString("status.claude_credential_access", comment: "")
+            } else if let snap = claudeSnapshot, snap.hasMenuUsage {
                 statusItem.button?.title = " " + snap.menuBarTitleText()
             } else {
                 statusItem.button?.title = " " + NSLocalizedString("status.awaiting_claude_code", comment: "")
@@ -373,6 +375,23 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func activateApplication(for provider: ProviderKind) {
         if provider == .claude {
+            if claudeSnapshot?.needsCredentialAccessPrompt == true {
+                DispatchQueue.main.async { [weak self] in
+                    guard let self else { return }
+                    let snap = ClaudeUsageClient.requestCredentialAccessAndFetchUsage()
+                    self.applyClaudeSnapshot(oauth: snap)
+                    if snap.needsCredentialAccessPrompt {
+                        return
+                    }
+                    self.foregroundProvider = nil
+                    self.lastActiveProvider = .claude
+                    UserDefaults.standard.set(ProviderKind.claude.rawValue, forKey: lastProviderDefaultsKey)
+                    self.updateStatusBarTitle()
+                    self.applyMenuBarIcon()
+                    self.scheduleProviderMenuRebuild()
+                }
+                return
+            }
             foregroundProvider = nil
             lastActiveProvider = provider
             UserDefaults.standard.set(provider.rawValue, forKey: lastProviderDefaultsKey)
@@ -427,7 +446,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             return snap.codexMenuItemTitle()
         case .claude:
             guard let snap = claudeSnapshot, snap.hasMenuUsage else { return "" }
-            return snap.menuItemTitle()
+            return snap.claudeMenuItemTitle()
         }
     }
 

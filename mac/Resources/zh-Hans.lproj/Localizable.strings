@@ -28,6 +28,8 @@
 "menu.codex_weekly_remaining" = "每周 %1$@(%2$@)";
 "menu.codex_reset_credits" = "可重置 %d 次";
 "status.awaiting_claude_code" = "启动 Claude Code 后获取";
+"status.claude_credential_access" = "Claude — 需要授权";
+"menu.claude_credential_access" = "Claude — 点按以授权显示用量";
 "menu.claude_five_hour_short" = "5小时 %@";
 "menu.claude_seven_day_short" = "每周 %@";
 "menu.claude_five_hour" = "5小时 剩余%1$@(%2$@)";
