@@ -4,7 +4,7 @@ import Sparkle
 
 private let aiUsageIntroURL = URL(string: "https://apps.tomippe.jp/ai-usage/")!
 private let appDisplayName = "AI Usage"
-private let pollInterval: TimeInterval = 300
+private let pollInterval: TimeInterval = 60
 private let noProvidersGracePeriod: TimeInterval = 60
 private let lastProviderDefaultsKey = "jp.tomippe.ai-usage.lastProvider"
 private extension Notification.Name {
@@ -29,6 +29,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var claudeSnapshot: ClaudeUsageSnapshot?
     private var lastFetchTime: Date?
     private var isFetching = false
+    private var lastMenuBarTitle: String?
+    private var hasReceivedUsageData = false
     private var pollTimer: Timer?
     private var claudeSnapshotTimer: Timer?
     private var lastActiveProvider: ProviderKind = .cursor
@@ -232,47 +234,80 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         return installed.first
     }
 
+    private func applyMenuBarTitle(_ title: String) {
+        lastMenuBarTitle = title
+        statusItem.button?.title = " " + title
+    }
+
+    /// 前面／最後に使ったアプリに合わせ、メニューバーは常に1行だけ表示する。
+    private func menuBarTitleForDisplayProvider() -> String? {
+        guard let provider = displayProvider() else { return nil }
+        let rate = effectiveLocalExchangeRate()
+
+        switch provider {
+        case .cursor:
+            guard let snap = cursorSnapshot else { return nil }
+            if snap.errorMessage == "not_logged_in" {
+                hasReceivedUsageData = true
+                return NSLocalizedString("status.not_logged_in", comment: "")
+            }
+            if snap.errorMessage != nil, snap.totalPercentUsed == nil, snap.limitRequests == 0 {
+                hasReceivedUsageData = true
+                return NSLocalizedString("status.unavailable", comment: "")
+            }
+            hasReceivedUsageData = true
+            return snap.menuBarTitleText(localExchangeRate: rate)
+        case .codex:
+            guard let snap = codexSnapshot else { return nil }
+            if snap.errorMessage != nil, snap.weeklyUsedPercent == nil, snap.primaryUsedPercent == nil {
+                hasReceivedUsageData = true
+                return NSLocalizedString("status.unavailable", comment: "")
+            }
+            hasReceivedUsageData = true
+            return snap.menuBarTitleText()
+        case .claude:
+            guard let snap = claudeSnapshot else { return nil }
+            if snap.needsCredentialAccessPrompt {
+                hasReceivedUsageData = true
+                return NSLocalizedString("status.claude_credential_access", comment: "")
+            }
+            if snap.hasMenuUsage {
+                hasReceivedUsageData = true
+                return snap.menuBarTitleText()
+            }
+            hasReceivedUsageData = true
+            return NSLocalizedString("status.awaiting_claude_code", comment: "")
+        }
+    }
+
     private func updateStatusBarTitle() {
-        guard let provider = displayProvider() else {
-            if mayShowNoProvidersMessage() {
-                statusItem.button?.title = " " + NSLocalizedString("status.no_providers", comment: "")
-            } else {
-                statusItem.button?.title = " …"
+        guard installedProviders().isEmpty == false || mayShowNoProvidersMessage() else {
+            if !isFetching, !hasReceivedUsageData {
+                applyMenuBarTitle("…")
             }
             return
         }
 
-        switch provider {
-        case .cursor:
-            if let snap = cursorSnapshot {
-                if snap.errorMessage == "not_logged_in" {
-                    statusItem.button?.title = " " + NSLocalizedString("status.not_logged_in", comment: "")
-                } else if snap.errorMessage != nil, cursorSnapshot?.totalPercentUsed == nil, snap.limitRequests == 0 {
-                    statusItem.button?.title = " " + NSLocalizedString("status.unavailable", comment: "")
-                } else {
-                    statusItem.button?.title = " " + snap.menuBarTitleText(localExchangeRate: effectiveLocalExchangeRate())
-                }
-            } else {
-                statusItem.button?.title = " …"
+        if installedProviders().isEmpty {
+            if mayShowNoProvidersMessage() {
+                applyMenuBarTitle(NSLocalizedString("status.no_providers", comment: ""))
+            } else if !isFetching, lastMenuBarTitle == nil {
+                applyMenuBarTitle("…")
             }
-        case .codex:
-            if let snap = codexSnapshot {
-                if snap.errorMessage != nil, snap.weeklyUsedPercent == nil, snap.primaryUsedPercent == nil {
-                    statusItem.button?.title = " " + NSLocalizedString("status.unavailable", comment: "")
-                } else {
-                    statusItem.button?.title = " " + snap.menuBarTitleText()
-                }
-            } else {
-                statusItem.button?.title = " …"
-            }
-        case .claude:
-            if let snap = claudeSnapshot, snap.needsCredentialAccessPrompt {
-                statusItem.button?.title = " " + NSLocalizedString("status.claude_credential_access", comment: "")
-            } else if let snap = claudeSnapshot, snap.hasMenuUsage {
-                statusItem.button?.title = " " + snap.menuBarTitleText()
-            } else {
-                statusItem.button?.title = " " + NSLocalizedString("status.awaiting_claude_code", comment: "")
-            }
+            return
+        }
+
+        if let title = menuBarTitleForDisplayProvider() {
+            applyMenuBarTitle(title)
+            return
+        }
+
+        if isFetching, lastMenuBarTitle != nil {
+            return
+        }
+
+        if !hasReceivedUsageData {
+            applyMenuBarTitle("…")
         }
     }
 
@@ -556,7 +591,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
 
         isFetching = true
-        statusItem.button?.title = " …"
 
         DispatchQueue.global(qos: .utility).async { [weak self] in
             guard let self else { return }

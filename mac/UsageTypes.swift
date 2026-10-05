@@ -121,9 +121,13 @@ struct CursorUsageSnapshot {
         CurrencyDisplayFormatter.menuBarOnDemandSuffix(dollars: onDemandSpendDollars, rate: localExchangeRate)
     }
 
-    /// メニューバー（アイコン横）。アプリ名は付けない。
+    /// メニューバー: 純正 … / API … / ¥… (〜M/d HH:mm)
     func menuBarTitleText(localExchangeRate: Double?) -> String {
-        cursorAutoApiOnDemandText(localExchangeRate: localExchangeRate)
+        var text = cursorAutoApiOnDemandText(localExchangeRate: localExchangeRate)
+        if let reset = formatMenuBarTildeReset(date: resetsAt, style: .monthDayTime) {
+            text += reset
+        }
+        return text
     }
 
     /// 親メニュー行: Cursor - Ultra 84.7% (純正 … / API … / ¥…)
@@ -152,18 +156,22 @@ struct CodexUsageSnapshot {
         primaryUsedPercent != nil || weeklyUsedPercent != nil
     }
 
-    /// メニューバー: 5時間 98% / 週間 75%（残り％）
+    /// メニューバー: 93% (〜4:10) / 87% (〜10/12)（残り％）
     func menuBarTitleText() -> String {
+        menuBarCompactLine() ?? "—"
+    }
+
+    func menuBarCompactLine() -> String? {
         var parts: [String] = []
         if let used = primaryUsedPercent {
             let rem = formatPercent(remainingPercent(fromUsed: used))
-            parts.append(String(format: NSLocalizedString("menu.codex_primary_short", comment: ""), rem))
+            parts.append(rem + (formatMenuBarTildeReset(date: primaryResetsAt, style: .clock) ?? ""))
         }
         if let used = weeklyUsedPercent {
             let rem = formatPercent(remainingPercent(fromUsed: used))
-            parts.append(String(format: NSLocalizedString("menu.codex_weekly_short", comment: ""), rem))
+            parts.append(rem + (formatMenuBarTildeReset(date: weeklyResetsAt, style: .monthDay) ?? ""))
         }
-        return parts.isEmpty ? "—" : parts.joined(separator: " / ")
+        return parts.isEmpty ? nil : parts.joined(separator: " / ")
     }
 
     /// 例: ChatGPT - Plus 5時間 98%(23:01) / 週間 75%(10/4) / 1回リセット可能
@@ -210,14 +218,21 @@ struct ClaudeUsageSnapshot {
     }
 
     func menuBarTitleText() -> String {
+        menuBarCompactLine() ?? "—"
+    }
+
+    func menuBarCompactLine() -> String? {
+        guard hasMenuUsage, !needsCredentialAccessPrompt else { return nil }
         var parts: [String] = []
         if let used = fiveHourUsedPercent {
-            parts.append(String(format: NSLocalizedString("menu.claude_five_hour_short", comment: ""), formatPercent(remainingPercent(fromUsed: used))))
+            let rem = formatPercent(remainingPercent(fromUsed: used))
+            parts.append(rem + (formatMenuBarTildeReset(date: fiveHourResetsAt, style: .clock) ?? ""))
         }
         if let used = sevenDayUsedPercent {
-            parts.append(String(format: NSLocalizedString("menu.claude_seven_day_short", comment: ""), formatPercent(remainingPercent(fromUsed: used))))
+            let rem = formatPercent(remainingPercent(fromUsed: used))
+            parts.append(rem + (formatMenuBarTildeReset(date: sevenDayResetsAt, style: .monthDay) ?? ""))
         }
-        return parts.isEmpty ? "—" : parts.joined(separator: " / ")
+        return parts.isEmpty ? nil : parts.joined(separator: " / ")
     }
 
     func menuItemTitle() -> String {
@@ -275,6 +290,31 @@ func formatCodexResetDay(_ date: Date?) -> String {
     f.locale = Locale.current
     f.dateFormat = "M/d"
     return f.string(from: date)
+}
+
+enum MenuBarTildeResetStyle {
+    case clock
+    case monthDay
+    case monthDayTime
+}
+
+/// メニューバー用 `(〜4:10)` / `(〜10/12)` / `(〜10/10 19:15)`
+func formatMenuBarTildeReset(date: Date?, style: MenuBarTildeResetStyle) -> String? {
+    guard let date else { return nil }
+    let inner: String
+    switch style {
+    case .clock:
+        inner = formatCodexResetClock(date)
+    case .monthDay:
+        inner = formatCodexResetDay(date)
+    case .monthDayTime:
+        let f = DateFormatter()
+        f.locale = Locale.current
+        f.dateFormat = "M/d HH:mm"
+        inner = f.string(from: date)
+    }
+    guard inner != "—" else { return nil }
+    return " (〜\(inner))"
 }
 
 func formatPercent(_ value: Double) -> String {

@@ -2,7 +2,7 @@
 
 Claudeの使用率を取れる**公式の公開APIはありません**。すでにある自作メニューバーアプリは、次のどれかの方法を使っています。
 
-**AI Usage の現状:** **① OAuth API**（キーチェーン / `~/.claude/.credentials.json`、トークン更新、`GET /api/oauth/usage`）を **300秒** のメイン更新と一緒にポーリング。**② ステータスライン**（`~/.claude/ai-usage-rate-limits.json`）は **15秒** ごとにマージ。①が取れれば Claude Code 未起動でも％を表示。429 時は直前の値を維持。
+**AI Usage の現状:** **① OAuth API**（キーチェーン / `~/.claude/.credentials.json`、トークン更新、`GET /api/oauth/usage`）を **60秒** のメイン更新と一緒にポーリング。**② ステータスライン**（`~/.claude/ai-usage-rate-limits.json`）は **15秒** ごとにマージ。①が取れれば Claude Code 未起動でも％を表示。429 時は直前の値を維持。
 
 ---
 

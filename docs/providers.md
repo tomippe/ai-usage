@@ -67,7 +67,7 @@ Terminal で `codex` CLI を動かしているときは前面がターミナル�
 
 取得手段の整理（① OAuth / ② statusline / ③ Web Cookie）は **[claude-usage-fetch.md](claude-usage-fetch.md)** を正本とする。
 
-**実装:** **①** `~/.claude/.credentials.json` を優先。無いときだけキーチェーン（`Claude Code-credentials`）を **UI なし** で試す（拒否後は再試行しない）。refresh 後の保存は **ファイルのみ**。`GET /api/oauth/usage` は **約300秒**。**②** statusline は **15秒** でマージ。429 時は前回値を維持。
+**実装:** **①** `~/.claude/.credentials.json` を優先。無いときだけキーチェーン（`Claude Code-credentials`）を **UI なし** で試す（拒否後は再試行しない）。refresh 後の保存は **ファイルのみ**。`GET /api/oauth/usage` は **60秒**（Cursor / Codex と同じメイン更新）。**②** statusline は **15秒** でマージ。429 時は前回値を維持。
 
 - `~/.claude.json`、`~/.claude/.credentials.json`、またはClaude Code実行ファイルがあるとき一覧に出す
 - 初回起動時、既存の `~/.claude/settings.json` に `statusLine` が無い場合だけAI Usageのstatuslineを登録する
