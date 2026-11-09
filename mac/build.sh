@@ -52,14 +52,19 @@ rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
 # ---------- アイコン生成 ----------
-if [ -f "icon.svg" ] || [ -f "icon.avif" ]; then
+WINDOWS_APP_ICON="../windows/Assets/app-icon.png"
+if [ -f "$WINDOWS_APP_ICON" ] || [ -f "icon.svg" ] || [ -f "icon.avif" ]; then
     echo "🎨 AppIcon.icns を生成中..."
     ICON_TMP="$BUILD_DIR/icon_tmp"
     ICONSET="$BUILD_DIR/AppIcon.iconset"
     rm -rf "$ICON_TMP" "$ICONSET"
     mkdir -p "$ICON_TMP" "$ICONSET"
 
-    if [ -f "icon.svg" ]; then
+    if [ -f "$WINDOWS_APP_ICON" ]; then
+        # Mac のアプリアイコンは Windows と同じ PNG 正本から生成する。
+        cp "$WINDOWS_APP_ICON" "$ICON_TMP/icon_src.png"
+        cp "$ICON_TMP/icon_src.png" "$ICON_TMP/icon_rounded.png"
+    elif [ -f "icon.svg" ]; then
         # 正本 icon.svg（丸角・グラデは SVG 内。追加マスクしない）
         magick -background none "icon.svg" -resize 1024x1024 "$ICON_TMP/icon_src.png"
         cp "$ICON_TMP/icon_src.png" "$ICON_TMP/icon_rounded.png"

@@ -1,6 +1,8 @@
 build/
 windows/build/
 windows/obj/
+/windows/tests/bin/
+/windows/tests/obj/
 mac/build/
 *.provisionprofile
 .DS_Store

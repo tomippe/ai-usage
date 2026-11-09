@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <!-- build\ 配下に .cs 等が混ざらないよう既定のコンパイル対象から除外 -->
-    <DefaultItemExcludes>$(DefaultItemExcludes);build\**\*</DefaultItemExcludes>
+    <DefaultItemExcludes>$(DefaultItemExcludes);build\**\*;tests\**\*</DefaultItemExcludes>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
     <UseWPF>true</UseWPF>
@@ -30,7 +30,6 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.14" />
-    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.0" />
     <PackageReference Include="System.Speech" Version="10.0.14" />
   </ItemGroup>
 
