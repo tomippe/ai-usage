@@ -8,6 +8,8 @@ struct UsageThresholdAlert {
 
 enum UsageAlertWindow: String, Hashable {
     case standard
+    case cursorNative
+    case cursorAPI
     case fiveHour
     case weekly
 

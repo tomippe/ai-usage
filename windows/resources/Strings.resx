@@ -110,7 +110,22 @@
     <value>Drag anywhere to move · Right-click for options</value>
   </data>
   <data name="speech" xml:space="preserve">
-    <value>{0}, {1} percent remaining.</value>
+    <value>{0}, {1}, {2} percent remaining.</value>
+  </data>
+  <data name="speechStandard" xml:space="preserve">
+    <value>usage</value>
+  </data>
+  <data name="speechCursorNative" xml:space="preserve">
+    <value>native quota</value>
+  </data>
+  <data name="speechCursorApi" xml:space="preserve">
+    <value>API quota</value>
+  </data>
+  <data name="speechFiveHour" xml:space="preserve">
+    <value>5 hour window</value>
+  </data>
+  <data name="speechWeekly" xml:space="preserve">
+    <value>weekly window</value>
   </data>
   <data name="cursorSpeech" xml:space="preserve">
     <value>Cursor</value>

@@ -10,20 +10,21 @@ internal sealed class UsageAlertMonitor
         public HashSet<int> Fired = Settings.VoiceThresholds.Where(t => remaining <= t).ToHashSet();
     }
 
-    private readonly Dictionary<ProviderKind, State> _states = [];
+    private readonly Dictionary<(ProviderKind Provider, string Window), State> _states = [];
 
-    public int? Observe(ProviderKind provider, double? remaining)
+    public int? Observe(ProviderKind provider, string window, double? remaining)
     {
+        var key = (provider, window);
         if (remaining is not { } raw || !double.IsFinite(raw))
         {
-            _states.Remove(provider);
+            _states.Remove(key);
             return null;
         }
 
         var current = Math.Clamp(raw, 0, 100);
-        if (!_states.TryGetValue(provider, out var state))
+        if (!_states.TryGetValue(key, out var state))
         {
-            _states[provider] = new State(current);
+            _states[key] = new State(current);
             return null;
         }
 
@@ -53,17 +54,17 @@ internal sealed class WindowsUsageSpeechAnnouncer : IDisposable
     private readonly System.Speech.Synthesis.SpeechSynthesizer _announcer = new();
     private readonly System.Speech.Synthesis.SpeechSynthesizer _preview = new();
 
-    public void Announce(ProviderKind provider, int threshold) => _announcer.SpeakAsync(Phrase(provider, threshold));
+    public void Announce(ProviderKind provider, string window, int threshold) => _announcer.SpeakAsync(Phrase(provider, window, threshold));
 
-    public void Preview(ProviderKind provider, int threshold)
+    public void Preview(ProviderKind provider, string window, int threshold)
     {
         _preview.SpeakAsyncCancelAll();
-        _preview.SpeakAsync(Phrase(provider, threshold));
+        _preview.SpeakAsync(Phrase(provider, window, threshold));
     }
 
     public void StopPreview() => _preview.SpeakAsyncCancelAll();
 
-    private static string Phrase(ProviderKind provider, int threshold)
+    private static string Phrase(ProviderKind provider, string window, int threshold)
     {
         var providerName = provider switch
         {
@@ -71,7 +72,15 @@ internal sealed class WindowsUsageSpeechAnnouncer : IDisposable
             ProviderKind.Codex => Localizer.Get("codexSpeech"),
             _ => Localizer.Get("claudeSpeech"),
         };
-        return Localizer.Get("speech", providerName, threshold);
+        var windowName = Localizer.Get(window switch
+        {
+            "cursorNative" => "speechCursorNative",
+            "cursorApi" => "speechCursorApi",
+            "fiveHour" => "speechFiveHour",
+            "weekly" => "speechWeekly",
+            _ => "speechStandard",
+        });
+        return Localizer.Get("speech", providerName, windowName, threshold);
     }
 
     public void Dispose()

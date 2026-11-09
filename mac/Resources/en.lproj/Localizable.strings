@@ -61,6 +61,8 @@
 "menu.voice_alert_threshold" = "%d%% remaining";
 "speech.remaining" = "%1$@, %2$@, %3$d%% remaining.";
 "speech.window.standard" = "usage";
+"speech.window.cursorNative" = "native usage";
+"speech.window.cursorAPI" = "API usage";
 "speech.window.fiveHour" = "5 hour window";
 "speech.window.weekly" = "weekly window";
 "speech.provider.cursor" = "Cursor";

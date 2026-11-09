@@ -73,7 +73,9 @@ enum CursorUsageClient {
         defer { sqlite3_close(db) }
 
         let jwt = queryString(db: db, key: "cursorAuth/accessToken")
-        guard let jwt, !jwt.isEmpty else { return nil }
+        guard let storedToken = jwt, !storedToken.isEmpty,
+              let jwt = CursorSafeStorage.resolveAccessToken(storedToken)
+        else { return nil }
 
         guard let userId = parseUserId(fromJWT: jwt) else { return nil }
         let email = queryString(db: db, key: "cursorAuth/cachedEmail")

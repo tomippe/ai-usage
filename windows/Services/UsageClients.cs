@@ -559,9 +559,11 @@ internal static class CursorUsageClient
             if (key == "cursorAuth/cachedEmail") email = value;
         }
         if (string.IsNullOrWhiteSpace(token)) return null;
-        var userId = ParseUserId(token);
+        var jwt = CursorSafeStorage.ResolveAccessToken(token);
+        if (string.IsNullOrWhiteSpace(jwt)) return null;
+        var userId = ParseUserId(jwt);
         if (userId is null) return null;
-        var auth = new CursorAuth(userId, $"{userId}%3A%3A{token}", email, token);
+        var auth = new CursorAuth(userId, $"{userId}%3A%3A{jwt}", email, jwt);
         lock (CacheGate) _authCache = (auth, DateTimeOffset.UtcNow);
         return auth;
     }

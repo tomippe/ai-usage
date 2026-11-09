@@ -130,9 +130,7 @@ public partial class MainWindow : Window
             foreach (var snapshot in refreshed)
             {
                 _snapshots[snapshot.Provider] = snapshot;
-                var threshold = _alertMonitor.Observe(snapshot.Provider, snapshot.RemainingPercent);
-                if (Settings.VoiceAlertsEnabled && threshold is { } alertThreshold)
-                    _speech.Announce(snapshot.Provider, alertThreshold);
+                ObserveUsageAlerts(snapshot);
             }
             _lastFullRefresh = DateTimeOffset.UtcNow;
             try { _exchangeRate = await CurrencyService.GetRateAsync(Settings.Currency, cancellationToken: default).ConfigureAwait(false); }
@@ -154,10 +152,39 @@ public partial class MainWindow : Window
         if (!ProviderAvailability.IsClaudeInstalled) return;
         var snapshot = await _usageService.RefreshClaudeStatusLineAsync();
         _snapshots[snapshot.Provider] = snapshot;
-        var threshold = _alertMonitor.Observe(snapshot.Provider, snapshot.RemainingPercent);
-        if (Settings.VoiceAlertsEnabled && threshold is { } alertThreshold)
-            _speech.Announce(snapshot.Provider, alertThreshold);
+        ObserveUsageAlerts(snapshot);
         UpdateDisplay();
+    }
+
+    private void ObserveUsageAlerts(UsageSnapshot snapshot)
+    {
+        if (snapshot.Provider == ProviderKind.Cursor)
+        {
+            var hasSplitUsage = snapshot.Windows.Any(w => w.Label == Localizer.Get("auto") || w.Label == Localizer.Get("api"));
+            if (hasSplitUsage)
+            {
+                AnnounceIfCrossed(snapshot.Provider, "cursorNative", snapshot.Windows.FirstOrDefault(w => w.Label == Localizer.Get("auto"))?.RemainingPercent);
+                AnnounceIfCrossed(snapshot.Provider, "cursorApi", snapshot.Windows.FirstOrDefault(w => w.Label == Localizer.Get("api"))?.RemainingPercent);
+                AnnounceIfCrossed(snapshot.Provider, "standard", null);
+            }
+            else
+            {
+                AnnounceIfCrossed(snapshot.Provider, "cursorNative", null);
+                AnnounceIfCrossed(snapshot.Provider, "cursorApi", null);
+                AnnounceIfCrossed(snapshot.Provider, "standard", snapshot.RemainingPercent);
+            }
+            return;
+        }
+
+        AnnounceIfCrossed(snapshot.Provider, "fiveHour", snapshot.Windows.FirstOrDefault(w => w.Label == Localizer.Get("claudeFiveHour"))?.RemainingPercent);
+        AnnounceIfCrossed(snapshot.Provider, "weekly", snapshot.Windows.FirstOrDefault(w => w.Label == Localizer.Get("weekly"))?.RemainingPercent);
+    }
+
+    private void AnnounceIfCrossed(ProviderKind provider, string window, double? remaining)
+    {
+        var threshold = _alertMonitor.Observe(provider, window, remaining);
+        if (Settings.VoiceAlertsEnabled && threshold is { } alertThreshold)
+            _speech.Announce(provider, window, alertThreshold);
     }
 
     private ProviderKind ChooseInitialProvider()
@@ -363,7 +390,7 @@ public partial class MainWindow : Window
                 IsChecked = Settings.IsThresholdEnabled(threshold),
                 Tag = threshold,
             };
-            item.MouseEnter += (_, _) => _speech.Preview(_displayProvider, threshold);
+            item.MouseEnter += (_, _) => _speech.Preview(_displayProvider, "standard", threshold);
             item.MouseLeave += (_, _) => _speech.StopPreview();
             item.Click += (_, _) => Settings.SetThresholdEnabled(threshold, item.IsChecked);
             root.Items.Add(item);

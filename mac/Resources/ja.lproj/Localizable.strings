@@ -61,6 +61,8 @@
 "menu.voice_alert_threshold" = "残り%d%%";
 "speech.remaining" = "%1$@、%2$@の残り%3$d%%です";
 "speech.window.standard" = "利用枠";
+"speech.window.cursorNative" = "純正枠";
+"speech.window.cursorAPI" = "API枠";
 "speech.window.fiveHour" = "5時間枠";
 "speech.window.weekly" = "週間枠";
 "speech.provider.cursor" = "カーソル";

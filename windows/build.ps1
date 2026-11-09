@@ -97,6 +97,11 @@ if ($env:TOMIPPE_WIN_BUILD_STAGED -ne '1') {
             -ArtifactRelativePaths @('windows\build', 'windows\version.txt') `
             -BuildScriptRelative 'windows\build.ps1' `
             -BoundParameters $PSBoundParameters) {
+        if (-not $NoLaunch) {
+            Write-Host "[3/3] Relaunch AIUsage..." -ForegroundColor Cyan
+            $portableX64 = Join-Path $projRootForStage 'windows\build\exe\x64\AIUsage.exe'
+            Start-BuiltAiUsagePortable -ExePath $portableX64
+        }
         exit 0
     }
 }

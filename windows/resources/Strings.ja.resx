@@ -110,7 +110,22 @@
     <value>どこでもドラッグして移動 · 右クリックでメニュー</value>
   </data>
   <data name="speech" xml:space="preserve">
-    <value>{0}、残り{1}%です</value>
+    <value>{0}、{1}の残り{2}%です</value>
+  </data>
+  <data name="speechStandard" xml:space="preserve">
+    <value>利用枠</value>
+  </data>
+  <data name="speechCursorNative" xml:space="preserve">
+    <value>純正枠</value>
+  </data>
+  <data name="speechCursorApi" xml:space="preserve">
+    <value>API枠</value>
+  </data>
+  <data name="speechFiveHour" xml:space="preserve">
+    <value>5時間枠</value>
+  </data>
+  <data name="speechWeekly" xml:space="preserve">
+    <value>週間枠</value>
   </data>
   <data name="cursorSpeech" xml:space="preserve">
     <value>カーソル</value>

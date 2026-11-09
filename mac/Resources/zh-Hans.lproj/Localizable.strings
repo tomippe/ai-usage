@@ -61,6 +61,8 @@
 "menu.voice_alert_threshold" = "剩余%d%%";
 "speech.remaining" = "%1$@，%2$@剩余%3$d%%。";
 "speech.window.standard" = "使用额度";
+"speech.window.cursorNative" = "原生额度";
+"speech.window.cursorAPI" = "API额度";
 "speech.window.fiveHour" = "5小时额度";
 "speech.window.weekly" = "每周额度";
 "speech.provider.cursor" = "Cursor";

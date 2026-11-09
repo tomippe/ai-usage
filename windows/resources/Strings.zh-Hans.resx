@@ -110,7 +110,22 @@
     <value>拖动窗口任意位置移动 · 右键打开菜单</value>
   </data>
   <data name="speech" xml:space="preserve">
-    <value>{0}，剩余 {1}%</value>
+    <value>{0}，{1}剩余 {2}%</value>
+  </data>
+  <data name="speechStandard" xml:space="preserve">
+    <value>使用额度</value>
+  </data>
+  <data name="speechCursorNative" xml:space="preserve">
+    <value>原生额度</value>
+  </data>
+  <data name="speechCursorApi" xml:space="preserve">
+    <value>API额度</value>
+  </data>
+  <data name="speechFiveHour" xml:space="preserve">
+    <value>5小时额度</value>
+  </data>
+  <data name="speechWeekly" xml:space="preserve">
+    <value>每周额度</value>
   </data>
   <data name="cursorSpeech" xml:space="preserve">
     <value>Cursor</value>

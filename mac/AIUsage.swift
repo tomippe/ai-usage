@@ -713,7 +713,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     self.cursorDashboardView.update(bundle: cursorDash)
                 }
                 self.codexSnapshot = codexResult
-                self.evaluateUsageAlert(provider: .cursor, remainingPercent: self.cursorRemainingPercent(cursorResult))
+                self.evaluateCursorUsageAlerts(cursorResult)
                 self.evaluateUsageAlert(provider: .codex, window: .fiveHour, remainingPercent: codexResult?.primaryUsedPercent.map { remainingPercent(fromUsed: $0) })
                 self.evaluateUsageAlert(provider: .codex, window: .weekly, remainingPercent: codexResult?.weeklyUsedPercent.map { remainingPercent(fromUsed: $0) })
                 self.applyClaudeSnapshot(oauth: claudeOAuth)
@@ -733,6 +733,24 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         guard snapshot.limitRequests > 0 else { return nil }
         let remainingRequests = max(0, snapshot.limitRequests - snapshot.usedRequests)
         return Double(remainingRequests) / Double(snapshot.limitRequests) * 100
+    }
+
+    private func evaluateCursorUsageAlerts(_ snapshot: CursorUsageSnapshot?) {
+        guard let snapshot, snapshot.errorMessage != "not_logged_in" else {
+            evaluateUsageAlert(provider: .cursor, window: .cursorNative, remainingPercent: nil)
+            evaluateUsageAlert(provider: .cursor, window: .cursorAPI, remainingPercent: nil)
+            evaluateUsageAlert(provider: .cursor, remainingPercent: nil)
+            return
+        }
+        if snapshot.autoPercentUsed != nil || snapshot.apiPercentUsed != nil {
+            evaluateUsageAlert(provider: .cursor, window: .cursorNative, remainingPercent: snapshot.autoPercentUsed.map { remainingPercent(fromUsed: $0) })
+            evaluateUsageAlert(provider: .cursor, window: .cursorAPI, remainingPercent: snapshot.apiPercentUsed.map { remainingPercent(fromUsed: $0) })
+            evaluateUsageAlert(provider: .cursor, remainingPercent: nil)
+        } else {
+            evaluateUsageAlert(provider: .cursor, window: .cursorNative, remainingPercent: nil)
+            evaluateUsageAlert(provider: .cursor, window: .cursorAPI, remainingPercent: nil)
+            evaluateUsageAlert(provider: .cursor, remainingPercent: cursorRemainingPercent(snapshot))
+        }
     }
 
     private func codexRemainingPercent(_ snapshot: CodexUsageSnapshot?) -> Double? {
