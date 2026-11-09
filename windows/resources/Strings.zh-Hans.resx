@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="noProviders" xml:space="preserve">
+    <value>未检测到受支持的 AI 提供商</value>
+  </data>
+  <data name="loading" xml:space="preserve">
+    <value>正在读取…</value>
+  </data>
+  <data name="unavailable" xml:space="preserve">
+    <value>无法获取使用量</value>
+  </data>
+  <data name="notLoggedIn" xml:space="preserve">
+    <value>未登录</value>
+  </data>
+  <data name="refresh" xml:space="preserve">
+    <value>立即刷新</value>
+  </data>
+  <data name="currency" xml:space="preserve">
+    <value>金额货币</value>
+  </data>
+  <data name="voiceAlerts" xml:space="preserve">
+    <value>语音提醒</value>
+  </data>
+  <data name="voiceEnabled" xml:space="preserve">
+    <value>启用语音提醒</value>
+  </data>
+  <data name="openAtLogin" xml:space="preserve">
+    <value>登录时打开</value>
+  </data>
+  <data name="about" xml:space="preserve">
+    <value>关于 AI Usage…</value>
+  </data>
+  <data name="feedback" xml:space="preserve">
+    <value>发送反馈…</value>
+  </data>
+  <data name="updates" xml:space="preserve">
+    <value>检查更新…</value>
+  </data>
+  <data name="restart" xml:space="preserve">
+    <value>重新启动 AI Usage</value>
+  </data>
+  <data name="quit" xml:space="preserve">
+    <value>退出 AI Usage</value>
+  </data>
+  <data name="threshold" xml:space="preserve">
+    <value>剩余 {0}%</value>
+  </data>
+  <data name="aboutBody" xml:space="preserve">
+    <value>在悬浮窗口中显示 AI 套餐使用量。&#10;版本 {0}</value>
+  </data>
+  <data name="tooltip" xml:space="preserve">
+    <value>拖动窗口任意位置移动 · 右键打开菜单</value>
+  </data>
+  <data name="speech" xml:space="preserve">
+    <value>{0}，剩余 {1}%</value>
+  </data>
+  <data name="cursorSpeech" xml:space="preserve">
+    <value>Cursor</value>
+  </data>
+  <data name="codexSpeech" xml:space="preserve">
+    <value>ChatGPT</value>
+  </data>
+  <data name="claudeSpeech" xml:space="preserve">
+    <value>Claude Code</value>
+  </data>
+  <data name="usd" xml:space="preserve">
+    <value>美元</value>
+  </data>
+  <data name="eur" xml:space="preserve">
+    <value>欧元</value>
+  </data>
+  <data name="jpy" xml:space="preserve">
+    <value>日元</value>
+  </data>
+  <data name="gbp" xml:space="preserve">
+    <value>英镑</value>
+  </data>
+  <data name="cny" xml:space="preserve">
+    <value>元</value>
+  </data>
+  <data name="claudeFiveHour" xml:space="preserve">
+    <value>5小时</value>
+  </data>
+  <data name="weekly" xml:space="preserve">
+    <value>每周</value>
+  </data>
+  <data name="auto" xml:space="preserve">
+    <value>自动</value>
+  </data>
+  <data name="api" xml:space="preserve">
+    <value>API</value>
+  </data>
+  <data name="resetCredits" xml:space="preserve">
+    <value>可重置 {0} 次</value>
+  </data>
+  <data name="dash.reset_header" xml:space="preserve">
+    <value>重置时间：{0}</value>
+  </data>
+  <data name="dash.duration.24h" xml:space="preserve">
+    <value>24小时</value>
+  </data>
+  <data name="dash.duration.7d" xml:space="preserve">
+    <value>7天</value>
+  </data>
+  <data name="dash.duration.30d" xml:space="preserve">
+    <value>30天</value>
+  </data>
+  <data name="dash.duration.cycle" xml:space="preserve">
+    <value>账单周期</value>
+  </data>
+  <data name="dash.card.total" xml:space="preserve">
+    <value>合计</value>
+  </data>
+  <data name="dash.card.auto" xml:space="preserve">
+    <value>自动</value>
+  </data>
+  <data name="dash.card.api" xml:space="preserve">
+    <value>API</value>
+  </data>
+  <data name="dash.card.ondemand" xml:space="preserve">
+    <value>按量</value>
+  </data>
+  <data name="dash.col.model" xml:space="preserve">
+    <value>模型</value>
+  </data>
+  <data name="dash.col.requests" xml:space="preserve">
+    <value>次数</value>
+  </data>
+  <data name="dash.col.tokens" xml:space="preserve">
+    <value>令牌</value>
+  </data>
+  <data name="dash.col.spend" xml:space="preserve">
+    <value>金额</value>
+  </data>
+  <data name="dash.chart.empty" xml:space="preserve">
+    <value>此期间无用量</value>
+  </data>
+  <data name="dash.table.empty" xml:space="preserve">
+    <value>此期间无数据</value>
+  </data>
+</root>

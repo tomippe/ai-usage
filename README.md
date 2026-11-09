@@ -1,6 +1,6 @@
 # AI Usage
 
-メニューバーに、前面アプリに応じた AI プラン使用率を出す Mac アプリ。
+前面アプリに応じた AI プラン使用率を表示するデスクトップアプリ。Mac はメニューバー、Windows はフローティング小窓を使う。
 
 - **表示名**: AI Usage
 - **スラッグ**: `ai-usage`
@@ -9,7 +9,7 @@
 
 VS Code / Cursor 拡張の [cursor-usage](../cursor-usage) は別製品として残す。データ層・集計・ダッシュボードの仕様はそこから引き継ぐ。
 
-**メニューバー本体の構造は [disk-monitor](../disk-monitor) と同じ。** Swift / Cocoa、`LSUIElement`、Sparkle 直接配布。Electron にはしない。Windows は初回対象外（`windows/` は作らない）。
+Mac 版は [disk-monitor](../disk-monitor) と同じ Swift / Cocoa のメニューバーアプリ。Windows 版は WPF の小窓アプリで、ドラッグ移動と右クリックメニューに対応する。Electron にはしない。
 
 ## いまあるもの
 
@@ -17,7 +17,8 @@ VS Code / Cursor 拡張の [cursor-usage](../cursor-usage) は別製品として
 |---|---|
 | ビルド | `./build.sh` → `mac/build.sh`（Sparkle 直接配布・disk-monitor 型） |
 | ルール | `.cursor/rules/build.mdc` |
-| ソース | `mac/AIUsage.swift`（メニューバー常駐・Cursor / Codex 等） |
+| Mac ソース | `mac/AIUsage.swift`（メニューバー常駐・Cursor / Codex 等） |
+| Windows ソース | [`windows/`](windows/)（WPF・ビルド前。詳細は [`windows/README.md`](windows/README.md)） |
 | 計画 | [docs/next-plan.md](docs/next-plan.md) |
 
 | 文書 | 内容 |

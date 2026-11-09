@@ -56,6 +56,16 @@
 "dash.chart.empty" = "この期間の使用率はありません";
 "menu.refresh" = "今すぐ更新";
 "menu.currency" = "金額レート";
+"menu.voice_alerts" = "音声通知";
+"menu.voice_alerts_enabled" = "音声通知を有効にする";
+"menu.voice_alert_threshold" = "残り%d%%";
+"speech.remaining" = "%1$@、%2$@の残り%3$d%%です";
+"speech.window.standard" = "利用枠";
+"speech.window.fiveHour" = "5時間枠";
+"speech.window.weekly" = "週間枠";
+"speech.provider.cursor" = "カーソル";
+"speech.provider.codex" = "チャットGPT";
+"speech.provider.claude" = "くろーどこーど";
 "menu.currency.usd" = "ドル";
 "menu.currency.eur" = "ユーロ";
 "menu.currency.jpy" = "円";

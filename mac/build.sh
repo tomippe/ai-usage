@@ -94,14 +94,14 @@ MOVE_SWIFT="$SCRIPT_DIR/../../build-common/MoveToApplicationsFolder.swift"
 TOMIPPE_ABOUT="$SCRIPT_DIR/../../build-common/TomippeAppAbout.swift"
 TOMIPPE_RELAUNCH="$SCRIPT_DIR/../../build-common/TomippeRelaunch.swift"
 TOMIPPE_FEEDBACK="$SCRIPT_DIR/../../build-common/TomippeFeedbackForm.swift"
-SWIFT_SOURCES="UsageTypes.swift ExchangeRateService.swift CursorUsageClient.swift CursorModelBreakdown.swift CursorDashboardMenuView.swift MenuBarIconRenderer.swift ProviderAppIcon.swift CodexUsageClient.swift ClaudeUsageClient.swift ProviderAvailability.swift AIUsage.swift $MOVE_SWIFT $TOMIPPE_ABOUT $TOMIPPE_RELAUNCH $TOMIPPE_FEEDBACK"
+SWIFT_SOURCES="UsageTypes.swift RemainingUsageAlerts.swift RemainingUsageSpeech.swift ExchangeRateService.swift CursorUsageClient.swift CursorModelBreakdown.swift CursorDashboardMenuView.swift MenuBarIconRenderer.swift ProviderAppIcon.swift CodexUsageClient.swift ClaudeUsageClient.swift ProviderAvailability.swift AIUsage.swift $MOVE_SWIFT $TOMIPPE_ABOUT $TOMIPPE_RELAUNCH $TOMIPPE_FEEDBACK"
 for src in $SWIFT_SOURCES; do
     if [ ! -f "$src" ]; then
         echo "❌ $src がありません。"
         exit 1
     fi
 done
-SWIFT_FLAGS="-parse-as-library -framework Cocoa -framework CoreServices -framework ServiceManagement -F Sparkle.framework/.. -framework Sparkle -lsqlite3 -Xlinker -rpath -Xlinker @executable_path/../Frameworks"
+SWIFT_FLAGS="-parse-as-library -framework Cocoa -framework AVFoundation -framework CoreServices -framework ServiceManagement -F Sparkle.framework/.. -framework Sparkle -lsqlite3 -Xlinker -rpath -Xlinker @executable_path/../Frameworks"
 UNIVERSAL_BIN="$BUILD_DIR/${APP_EXE}_universal"
 
 echo "📦 コンパイル中 (arm64)..."

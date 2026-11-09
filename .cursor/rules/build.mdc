@@ -17,7 +17,7 @@ alwaysApply: true
 - **デプロイ（Mac）**: `../apps.tomippe.jp/ai-usage/`（DMG・manifest.json を FTP 同期）
 - **紹介ページ**: WordPress（`docs/app-page.md`、ローカル `.env` は `.env.example` を参照）
 - **app-versions**: 版列は **a.b.c**（`docs/app-versions.html` が正本）。フルビルド前に該当行を更新すること
-- **Windows / MAS**: 初回対象外
+- **MAS**: 対象外。Windows 版は `windows/` の独立 WPF プロジェクトで、この Mac ビルドには含めない
 
 ## ビルドコマンド（Mac）
 
@@ -27,6 +27,15 @@ alwaysApply: true
 | `./build.sh` | 直接配布版（Developer ID・ノータライズ・ステープル）→ 配布・FTP・版上げ・Git コミット |
 | `./build.sh -cm "メッセージ"` | コミットメッセージを指定 |
 | `cd mac && ./build.sh -app` | Mac のみ確認（ルートと同じ） |
+
+## Windows
+
+- **プロジェクト**: `windows/AIUsage.Windows.csproj`（WPF / .NET 10）
+- **バージョン**: `windows/version.txt`
+- **成果物**: `windows/build/`（gitignore）
+- **リソース**: `windows/resources/`
+- **ビルド**: Windows 開発環境で `dotnet build windows/AIUsage.Windows.csproj -c Release`
+- Windows のビルドは Mac の `./build.sh` から実行しない。
 
 ## 固有設定
 

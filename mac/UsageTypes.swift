@@ -21,6 +21,14 @@ enum ProviderKind: String, CaseIterable, Codable {
         case .claude: return "Claude"
         }
     }
+
+    var speechDisplayNameKey: String {
+        switch self {
+        case .cursor: return "speech.provider.cursor"
+        case .codex: return "speech.provider.codex"
+        case .claude: return "speech.provider.claude"
+        }
+    }
 }
 
 enum OnDemandDisplayState: String {

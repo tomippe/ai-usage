@@ -1,0 +1,65 @@
+{
+  "desktopScreenshots": ["DesktopScreenshot1.png"],
+  "listings": {
+    "en-us": {
+      "title": "AI Usage: ChatGPT, Claude, Cursor Monitor",
+      "shortDescription": "See Cursor and ChatGPT AI usage in a small always-on-top window.",
+      "description": "AI Usage shows Cursor and ChatGPT (Codex) usage at a glance in a small always-on-top window.\n\nIt follows your foreground app to choose the provider and shows remaining quota and reset times. Claude Code users can connect via the status line bridge.\n\nRight-click for refresh, currency, voice alerts, startup options, and feedback.\n\nUsage is read from local Cursor, Codex, and Claude files on your PC. No personal data is sent to Studio Tomippe servers.",
+      "releaseNotes": "Initial Microsoft Store release for Windows.",
+      "features": [
+        "Cursor and ChatGPT usage display",
+        "Provider follows foreground app",
+        "Claude Code status line bridge",
+        "Voice alerts",
+        "Japanese, English, and Chinese UI"
+      ],
+      "keywords": [
+        "Cursor",
+        "ChatGPT",
+        "Claude",
+        "AI usage",
+        "Codex"
+      ]
+    },
+    "ja-jp": {
+      "title": "AI Usage: ChatGPT, Claude, Cursor Monitor",
+      "shortDescription": "Cursor と ChatGPT の AI 使用率を、常に前面のコンパクトなウィンドウで表示します。",
+      "description": "AI Usage は、Cursor と ChatGPT（Codex）の使用率をデスクトップ上でひと目確認できるユーティリティです。\n\n前面アプリに合わせて表示するプロバイダを切り替え、残量・リセット時刻をコンパクトに表示します。Claude Code をお使いの場合は、ステータスライン連携で使用率を読み取れます。\n\n右クリックメニューから更新、通貨表示、音声アラート、ログイン時起動、フィードバックなどを設定できます。\n\nデータはお使いの PC 上の Cursor / Codex / Claude の設定・ローカルファイルから読み取るだけで、Studio Tomippe のサーバーへ個人データを送信しません。",
+      "releaseNotes": "Windows 版の初回 Store 公開です。",
+      "features": [
+        "Cursor / ChatGPT 使用率の表示",
+        "前面アプリに連動したプロバイダ切替",
+        "Claude Code ステータスライン連携",
+        "音声アラート",
+        "日本語・English・中文 UI"
+      ],
+      "keywords": [
+        "Cursor",
+        "ChatGPT",
+        "Claude",
+        "AI使用率",
+        "Codex"
+      ]
+    },
+    "zh-hans": {
+      "title": "AI Usage: ChatGPT, Claude, Cursor Monitor",
+      "shortDescription": "在置顶小窗口中查看 Cursor 与 ChatGPT 的 AI 使用率。",
+      "description": "AI Usage 在置顶的紧凑窗口中显示 Cursor 与 ChatGPT（Codex）的使用率。\n\n会根据前台应用切换提供商，并显示剩余额度与重置时间。使用 Claude Code 时可通过状态行桥接读取使用率。\n\n右键菜单可刷新、设置货币与语音提醒、开机启动以及反馈。\n\n仅从本机 Cursor、Codex、Claude 相关文件读取，不向 Studio Tomippe 服务器发送个人数据。",
+      "releaseNotes": "Windows 版首次发布至 Microsoft Store。",
+      "features": [
+        "显示 Cursor / ChatGPT 使用率",
+        "随前台应用切换提供商",
+        "Claude Code 状态行桥接",
+        "语音提醒",
+        "日语、英语、简体中文界面"
+      ],
+      "keywords": [
+        "Cursor",
+        "ChatGPT",
+        "Claude",
+        "AI使用率",
+        "Codex"
+      ]
+    }
+  }
+}

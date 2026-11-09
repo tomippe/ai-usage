@@ -1,0 +1,33 @@
+<Window x:Class="AIUsage.Windows.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="AI Usage"
+        MinHeight="32" MinWidth="72" MaxWidth="560"
+        SizeToContent="WidthAndHeight"
+        WindowStyle="None" ResizeMode="NoResize"
+        ShowInTaskbar="False" ShowActivated="False" Topmost="True"
+        Background="{DynamicResource WindowChromeBrush}"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
+        FontFamily="Segoe UI"
+        SourceInitialized="Window_SourceInitialized"
+        Loaded="Window_Loaded" Closing="Window_Closing"
+        PreviewMouseLeftButtonDown="Window_PreviewMouseLeftButtonDown"
+        PreviewMouseRightButtonUp="Window_PreviewMouseRightButtonUp">
+  <!-- 角丸は DWM の WINDOW_CORNER_PREFERENCE に任せる（ここで CornerRadius すると HWND の直角と二重になる） -->
+  <Border x:Name="Panel" Background="{DynamicResource PanelSurfaceBrush}"
+          BorderThickness="0" Padding="8,5"
+          SnapsToDevicePixels="True">
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+      <Image x:Name="ProviderIcon" Width="16" Height="16" Margin="0,0,5,0"
+             Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"
+             SnapsToDevicePixels="True" VerticalAlignment="Center" Visibility="Collapsed" />
+      <TextBlock x:Name="ProviderGlyph" Text="AI" Visibility="Collapsed"
+                 FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"
+                 Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,5,0" />
+      <TextBlock x:Name="UsageText" Text="…"
+                 Foreground="{DynamicResource ForegroundBrush}"
+                 FontSize="11.5" FontWeight="Normal" TextTrimming="CharacterEllipsis"
+                 VerticalAlignment="Center" />
+    </StackPanel>
+  </Border>
+</Window>

@@ -56,6 +56,16 @@
 "dash.chart.empty" = "No usage in this period";
 "menu.refresh" = "Refresh Now";
 "menu.currency" = "Amount currency";
+"menu.voice_alerts" = "Voice Alerts";
+"menu.voice_alerts_enabled" = "Enable Voice Alerts";
+"menu.voice_alert_threshold" = "%d%% remaining";
+"speech.remaining" = "%1$@, %2$@, %3$d%% remaining.";
+"speech.window.standard" = "usage";
+"speech.window.fiveHour" = "5 hour window";
+"speech.window.weekly" = "weekly window";
+"speech.provider.cursor" = "Cursor";
+"speech.provider.codex" = "Chat G P T";
+"speech.provider.claude" = "Claude Code";
 "menu.currency.usd" = "US Dollar";
 "menu.currency.eur" = "Euro";
 "menu.currency.jpy" = "Japanese Yen";

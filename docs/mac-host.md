@@ -3,7 +3,7 @@
 正本: `/Users/tomippe/Cursor/disk-monitor/`
 コピー元のビルド: `disk-monitor/mac/build.sh` と `disk-monitor/build.sh`
 
-AI Usage は **Mac のみ**。disk-monitor の `windows/` は持ち込まない。ip-monitor は Mac 単体の兄弟だが、構成の正本は disk-monitor の Mac 側。
+この文書は AI Usage の **Mac 版**を扱う。Windows 版は [`windows/README.md`](../windows/README.md) の独立 WPF プロジェクトで、以下の Mac ビルド・配布手順には含めない。disk-monitor の `windows/` は持ち込まず、Mac 構成の正本は disk-monitor の Mac 側。
 
 ## ディレクトリ（作るとき）
 
@@ -124,7 +124,7 @@ disk-monitor 固有の `NSAppleEventsUsageDescription`（ゴミ箱）は **付�
 
 - Electron / Bun ランタイムを .app に同梱しない（disk-monitor 型を崩す）
 - MAS サンドボックス
-- 初回の `windows/`
+- Windows 版をこの Mac 配布パイプラインへ含めない
 - cursor-usage の `vscode` ホストを残す
 
-cursor-usage の TypeScript は **仕様と移植元**。動くアプリは Swift 一本。テスト用に `core/` へ TS を残すのは任意（実行時には使わない）。
+cursor-usage の TypeScript は **Mac 版の仕様と移植元**。Mac アプリは Swift で動く。テスト用に `core/` へ TS を残すのは任意（実行時には使わない）。

@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="noProviders" xml:space="preserve">
+    <value>対応するAIプロバイダが見つかりません</value>
+  </data>
+  <data name="loading" xml:space="preserve">
+    <value>取得中…</value>
+  </data>
+  <data name="unavailable" xml:space="preserve">
+    <value>使用率を取得できません</value>
+  </data>
+  <data name="notLoggedIn" xml:space="preserve">
+    <value>未ログイン</value>
+  </data>
+  <data name="refresh" xml:space="preserve">
+    <value>今すぐ更新</value>
+  </data>
+  <data name="currency" xml:space="preserve">
+    <value>金額レート</value>
+  </data>
+  <data name="voiceAlerts" xml:space="preserve">
+    <value>音声通知</value>
+  </data>
+  <data name="voiceEnabled" xml:space="preserve">
+    <value>音声通知を有効にする</value>
+  </data>
+  <data name="openAtLogin" xml:space="preserve">
+    <value>ログイン時に開く</value>
+  </data>
+  <data name="about" xml:space="preserve">
+    <value>AI Usage について…</value>
+  </data>
+  <data name="feedback" xml:space="preserve">
+    <value>フィードバックを送る…</value>
+  </data>
+  <data name="updates" xml:space="preserve">
+    <value>アップデートを確認…</value>
+  </data>
+  <data name="restart" xml:space="preserve">
+    <value>AI Usage を再起動</value>
+  </data>
+  <data name="quit" xml:space="preserve">
+    <value>AI Usage を終了</value>
+  </data>
+  <data name="threshold" xml:space="preserve">
+    <value>残り{0}%</value>
+  </data>
+  <data name="aboutBody" xml:space="preserve">
+    <value>AIプランの使用率を小窓に表示します。&#10;バージョン {0}</value>
+  </data>
+  <data name="tooltip" xml:space="preserve">
+    <value>どこでもドラッグして移動 · 右クリックでメニュー</value>
+  </data>
+  <data name="speech" xml:space="preserve">
+    <value>{0}、残り{1}%です</value>
+  </data>
+  <data name="cursorSpeech" xml:space="preserve">
+    <value>カーソル</value>
+  </data>
+  <data name="codexSpeech" xml:space="preserve">
+    <value>チャットGPT</value>
+  </data>
+  <data name="claudeSpeech" xml:space="preserve">
+    <value>クロードコード</value>
+  </data>
+  <data name="usd" xml:space="preserve">
+    <value>ドル</value>
+  </data>
+  <data name="eur" xml:space="preserve">
+    <value>ユーロ</value>
+  </data>
+  <data name="jpy" xml:space="preserve">
+    <value>円</value>
+  </data>
+  <data name="gbp" xml:space="preserve">
+    <value>英ポンド</value>
+  </data>
+  <data name="cny" xml:space="preserve">
+    <value>元</value>
+  </data>
+  <data name="claudeFiveHour" xml:space="preserve">
+    <value>5時間</value>
+  </data>
+  <data name="weekly" xml:space="preserve">
+    <value>週間</value>
+  </data>
+  <data name="auto" xml:space="preserve">
+    <value>自動</value>
+  </data>
+  <data name="api" xml:space="preserve">
+    <value>API</value>
+  </data>
+  <data name="resetCredits" xml:space="preserve">
+    <value>{0}回リセット可能</value>
+  </data>
+  <data name="dash.reset_header" xml:space="preserve">
+    <value>リセット日時: {0}</value>
+  </data>
+  <data name="dash.duration.24h" xml:space="preserve">
+    <value>24時間</value>
+  </data>
+  <data name="dash.duration.7d" xml:space="preserve">
+    <value>7日</value>
+  </data>
+  <data name="dash.duration.30d" xml:space="preserve">
+    <value>30日</value>
+  </data>
+  <data name="dash.duration.cycle" xml:space="preserve">
+    <value>請求期間</value>
+  </data>
+  <data name="dash.card.total" xml:space="preserve">
+    <value>合計</value>
+  </data>
+  <data name="dash.card.auto" xml:space="preserve">
+    <value>自動</value>
+  </data>
+  <data name="dash.card.api" xml:space="preserve">
+    <value>API</value>
+  </data>
+  <data name="dash.card.ondemand" xml:space="preserve">
+    <value>従量</value>
+  </data>
+  <data name="dash.col.model" xml:space="preserve">
+    <value>モデル</value>
+  </data>
+  <data name="dash.col.requests" xml:space="preserve">
+    <value>回数</value>
+  </data>
+  <data name="dash.col.tokens" xml:space="preserve">
+    <value>トークン</value>
+  </data>
+  <data name="dash.col.spend" xml:space="preserve">
+    <value>金額</value>
+  </data>
+  <data name="dash.chart.empty" xml:space="preserve">
+    <value>この期間の使用量はありません</value>
+  </data>
+  <data name="dash.table.empty" xml:space="preserve">
+    <value>この期間にデータがありません</value>
+  </data>
+</root>

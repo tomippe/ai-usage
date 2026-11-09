@@ -78,3 +78,7 @@ Terminal で `codex` CLI を動かしているときは前面がターミナル�
 ## 競合
 
 [CodexBar](https://github.com/steipete/CodexBar) は Codex / Claude / Cursor などをメニューバーに出す。AI Usage は tomippe 配布・disk-monitor 型・前面で数字を切り替える、が違い。互換や全プロバイダ横断はしない。
+
+## Windows 版
+
+Windows 実装の詳細は [windows/README.md](../windows/README.md)。Cursor のDBは `%APPDATA%\Cursor\User\globalStorage\state.vscdb`、Codex は利用可能な `codex app-server`、Claude Code は statusline 連携を使う。Codex CLI が見つからない場合の `auth.json` API フォールバックはまだ実装していない。

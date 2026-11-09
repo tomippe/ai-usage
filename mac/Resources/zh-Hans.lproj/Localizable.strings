@@ -56,6 +56,16 @@
 "dash.chart.empty" = "此期间无用量";
 "menu.refresh" = "立即刷新";
 "menu.currency" = "金额货币";
+"menu.voice_alerts" = "语音提醒";
+"menu.voice_alerts_enabled" = "启用语音提醒";
+"menu.voice_alert_threshold" = "剩余%d%%";
+"speech.remaining" = "%1$@，%2$@剩余%3$d%%。";
+"speech.window.standard" = "使用额度";
+"speech.window.fiveHour" = "5小时额度";
+"speech.window.weekly" = "每周额度";
+"speech.provider.cursor" = "Cursor";
+"speech.provider.codex" = "ChatGPT";
+"speech.provider.claude" = "Claude Code";
 "menu.currency.usd" = "美元";
 "menu.currency.eur" = "欧元";
 "menu.currency.jpy" = "日元";

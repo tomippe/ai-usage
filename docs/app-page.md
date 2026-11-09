@@ -16,6 +16,8 @@
 | 紹介ページ（app） | **2534** |
 | プライバシーポリシー（app・子ページ） | **2535** |
 
+ポリシー本文の正本は [`docs/privacy-policy.html`](privacy-policy.html)。macOS 版と Windows 版の両方を対象とし、公開ページへ同じ内容を反映する。
+
 ## キャッチフレーズ（app-cp）
 
 前面の AI の使い方がひと目で分かる

@@ -7,6 +7,8 @@ private let appDisplayName = "AI Usage"
 private let pollInterval: TimeInterval = 60
 private let noProvidersGracePeriod: TimeInterval = 60
 private let lastProviderDefaultsKey = "jp.tomippe.ai-usage.lastProvider"
+private let voiceAlertsEnabledDefaultsKey = "jp.tomippe.ai-usage.voiceAlerts.enabled"
+private let voiceAlertThresholdDefaultsPrefix = "jp.tomippe.ai-usage.voiceAlerts.threshold."
 private extension Notification.Name {
     static let applicationDidChangeEffectiveAppearance = Notification.Name(
         "NSApplicationDidChangeEffectiveAppearanceNotification"
@@ -18,9 +20,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var launchAtLoginMenuItem: NSMenuItem?
     private var providerMenuItems: [ProviderKind: NSMenuItem] = [:]
     private var menuContainer: NSMenu!
+    private var voiceAlertsSubmenu: NSMenu?
+    private var voiceAlertsEnabledMenuItem: NSMenuItem?
+    private var voiceAlertThresholdMenuItems: [Int: NSMenuItem] = [:]
     private let updaterController = SPUStandardUpdaterController(
         startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil
     )
+    private let usageAlertAnnouncer = MacUsageSpeechAnnouncer()
+    private var usageAlertMonitor = RemainingUsageAlertMonitor()
 
     private var cursorSnapshot: CursorUsageSnapshot?
     private var cursorDashboardBundle: CursorDashboardBundle?
@@ -80,6 +87,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menuContainer.addItem(.separator())
         menuContainer.addItem(menuItem(NSLocalizedString("menu.refresh", comment: ""), #selector(refreshNow), "r"))
         menuContainer.addItem(buildCurrencyMenuItem())
+        menuContainer.addItem(buildVoiceAlertsMenuItem())
 
         if #available(macOS 13.0, *) {
             let loginItem = NSMenuItem(
@@ -157,6 +165,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         isStatusMenuOpen = true
         syncLaunchAtLoginItem()
         syncCurrencyMenuSelection()
+        syncVoiceAlertSettings()
         for (provider, item) in providerMenuItems {
             item.title = providerMenuLine(provider: provider)
         }
@@ -167,7 +176,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func menuDidClose(_ menu: NSMenu) {
+        if menu == voiceAlertsSubmenu {
+            usageAlertAnnouncer.stopPreview()
+            return
+        }
         guard menu == menuContainer else { return }
+        usageAlertAnnouncer.stopPreview()
         isStatusMenuOpen = false
         if pendingProviderMenuRebuild {
             pendingProviderMenuRebuild = false
@@ -175,6 +189,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 self?.rebuildProviderMenuItems()
             }
         }
+    }
+
+    func menu(_ menu: NSMenu, willHighlight item: NSMenuItem?) {
+        guard menu == voiceAlertsSubmenu else { return }
+        guard let threshold = item?.representedObject as? Int else {
+            usageAlertAnnouncer.stopPreview()
+            return
+        }
+        usageAlertAnnouncer.preview(UsageThresholdAlert(
+            provider: displayProvider() ?? .cursor,
+            window: .standard,
+            thresholdPercent: threshold
+        ))
     }
 
     /// メニューバー色はシステム Dark Mode ではなく status item の effectiveAppearance に従う。描画はテンプレートに任せる。
@@ -517,6 +544,73 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
+    private func buildVoiceAlertsMenuItem() -> NSMenuItem {
+        let root = NSMenuItem(title: NSLocalizedString("menu.voice_alerts", comment: ""), action: nil, keyEquivalent: "")
+        let submenu = NSMenu()
+        submenu.delegate = self
+        voiceAlertsSubmenu = submenu
+
+        let enabledItem = NSMenuItem(
+            title: NSLocalizedString("menu.voice_alerts_enabled", comment: ""),
+            action: #selector(toggleVoiceAlerts),
+            keyEquivalent: ""
+        )
+        enabledItem.target = self
+        submenu.addItem(enabledItem)
+        voiceAlertsEnabledMenuItem = enabledItem
+        submenu.addItem(.separator())
+
+        for threshold in RemainingUsageAlertMonitor.supportedThresholds {
+            let title = String(
+                format: NSLocalizedString("menu.voice_alert_threshold", comment: ""),
+                threshold
+            )
+            let item = NSMenuItem(title: title, action: #selector(toggleVoiceAlertThreshold(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = threshold
+            submenu.addItem(item)
+            voiceAlertThresholdMenuItems[threshold] = item
+        }
+
+        root.submenu = submenu
+        syncVoiceAlertSettings()
+        return root
+    }
+
+    private var voiceAlertsEnabled: Bool {
+        UserDefaults.standard.bool(forKey: voiceAlertsEnabledDefaultsKey)
+    }
+
+    private func isVoiceAlertThresholdEnabled(_ threshold: Int) -> Bool {
+        let key = voiceAlertThresholdDefaultsPrefix + String(threshold)
+        guard UserDefaults.standard.object(forKey: key) != nil else { return true }
+        return UserDefaults.standard.bool(forKey: key)
+    }
+
+    private func selectedVoiceAlertThresholds() -> Set<Int> {
+        Set(RemainingUsageAlertMonitor.supportedThresholds.filter { isVoiceAlertThresholdEnabled($0) })
+    }
+
+    private func syncVoiceAlertSettings() {
+        let enabled = voiceAlertsEnabled
+        voiceAlertsEnabledMenuItem?.state = enabled ? .on : .off
+        for (threshold, item) in voiceAlertThresholdMenuItems {
+            item.state = isVoiceAlertThresholdEnabled(threshold) ? .on : .off
+        }
+    }
+
+    @objc private func toggleVoiceAlerts() {
+        UserDefaults.standard.set(!voiceAlertsEnabled, forKey: voiceAlertsEnabledDefaultsKey)
+        syncVoiceAlertSettings()
+    }
+
+    @objc private func toggleVoiceAlertThreshold(_ sender: NSMenuItem) {
+        guard let threshold = sender.representedObject as? Int else { return }
+        let key = voiceAlertThresholdDefaultsPrefix + String(threshold)
+        UserDefaults.standard.set(!isVoiceAlertThresholdEnabled(threshold), forKey: key)
+        syncVoiceAlertSettings()
+    }
+
     @objc private func selectDisplayCurrency(_ sender: NSMenuItem) {
         guard let raw = sender.representedObject as? String,
               let currency = DisplayCurrency(rawValue: raw) else { return }
@@ -576,6 +670,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             || merged?.errorMessage != claudeSnapshot?.errorMessage
         guard changed else { return }
         claudeSnapshot = merged
+        evaluateUsageAlert(provider: .claude, window: .fiveHour, remainingPercent: merged?.fiveHourUsedPercent.map { remainingPercent(fromUsed: $0) })
+        evaluateUsageAlert(provider: .claude, window: .weekly, remainingPercent: merged?.sevenDayUsedPercent.map { remainingPercent(fromUsed: $0) })
         updateStatusBarTitle()
         syncProviderMenuItemTitles()
         if oauth != nil, !isStatusMenuOpen {
@@ -617,6 +713,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     self.cursorDashboardView.update(bundle: cursorDash)
                 }
                 self.codexSnapshot = codexResult
+                self.evaluateUsageAlert(provider: .cursor, remainingPercent: self.cursorRemainingPercent(cursorResult))
+                self.evaluateUsageAlert(provider: .codex, window: .fiveHour, remainingPercent: codexResult?.primaryUsedPercent.map { remainingPercent(fromUsed: $0) })
+                self.evaluateUsageAlert(provider: .codex, window: .weekly, remainingPercent: codexResult?.weeklyUsedPercent.map { remainingPercent(fromUsed: $0) })
                 self.applyClaudeSnapshot(oauth: claudeOAuth)
                 self.syncProviderMenuItemTitles()
                 self.updateStatusBarTitle()
@@ -624,6 +723,43 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 self.refreshExchangeRateIfNeeded(for: cursorResult)
             }
         }
+    }
+
+    private func cursorRemainingPercent(_ snapshot: CursorUsageSnapshot?) -> Double? {
+        guard let snapshot, snapshot.errorMessage != "not_logged_in" else { return nil }
+        if let usedPercent = snapshot.totalPercentUsed {
+            return remainingPercent(fromUsed: usedPercent)
+        }
+        guard snapshot.limitRequests > 0 else { return nil }
+        let remainingRequests = max(0, snapshot.limitRequests - snapshot.usedRequests)
+        return Double(remainingRequests) / Double(snapshot.limitRequests) * 100
+    }
+
+    private func codexRemainingPercent(_ snapshot: CodexUsageSnapshot?) -> Double? {
+        guard let snapshot else { return nil }
+        return [snapshot.primaryUsedPercent, snapshot.weeklyUsedPercent]
+            .compactMap { $0 }
+            .map { remainingPercent(fromUsed: $0) }
+            .min()
+    }
+
+    private func claudeRemainingPercent(_ snapshot: ClaudeUsageSnapshot?) -> Double? {
+        guard let snapshot, !snapshot.needsCredentialAccessPrompt else { return nil }
+        return [snapshot.fiveHourUsedPercent, snapshot.sevenDayUsedPercent]
+            .compactMap { $0 }
+            .map { remainingPercent(fromUsed: $0) }
+            .min()
+    }
+
+    private func evaluateUsageAlert(provider: ProviderKind, window: UsageAlertWindow = .standard, remainingPercent: Double?) {
+        let enabledThresholds = voiceAlertsEnabled ? selectedVoiceAlertThresholds() : []
+        guard let alert = usageAlertMonitor.observe(
+            provider: provider,
+            window: window,
+            remainingPercent: remainingPercent,
+            enabledThresholds: enabledThresholds
+        ) else { return }
+        usageAlertAnnouncer.announce(alert)
     }
 
     @objc private func restartApp() {
